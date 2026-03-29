@@ -1,0 +1,134 @@
+.container {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 30px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #f97316, #eab308);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gwLabels {
+  display: flex;
+  gap: 8px;
+}
+
+.gwLabel {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.loading {
+  text-align: center;
+  opacity: 0.5;
+  padding: 20px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--glass-border);
+  text-align: center;
+}
+
+.playerCol { text-align: left !important; min-width: 110px; }
+.gwCol { width: 72px; }
+
+.row {
+  transition: background 0.15s;
+}
+
+.row:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.row td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.playerCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.playerName {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.teamName {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.fixCell {
+  text-align: center;
+}
+
+.fixChip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  min-width: 44px;
+  line-height: 1.2;
+  cursor: default;
+}
+
+.venue {
+  font-size: 0.6rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.blankChip {
+  color: #334155;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}

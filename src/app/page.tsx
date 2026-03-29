@@ -10,6 +10,8 @@ import HistoryChart from '../components/HistoryChart';
 import GameweekHistory from '../components/GameweekHistory';
 import SyncStatus from '../components/SyncStatus';
 import RankProjection from '../components/RankProjection';
+import FixtureTicker from '../components/FixtureTicker';
+import TransferAnalyser from '../components/TransferAnalyser';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
@@ -98,6 +100,8 @@ export default function DashboardShell() {
       <RankProjection />
       <HistoryChart />
       <GameweekHistory />
+      <FixtureTicker />
+      <TransferAnalyser />
 
       <div className={styles.mainGrid}>
         <div className={styles.panel}>
