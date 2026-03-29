@@ -94,10 +94,25 @@
   margin-top: 2px;
 }
 
-.positiveSub { color: #ef4444; font-size: 0.85rem; }
-.negativeSub { color: #22c55e; font-size: 0.85rem; }
+.positiveSub { color: #f87171; font-size: 0.85rem; }
+.negativeSub { color: #34d399; font-size: 0.85rem; }
 
-.time {
-  font-size: 0.75rem;
-  color: #64748b;
+.gain { color: #22c55e; }
+.loss { color: #ef4444; }
+
+.pointsGrid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.mainPoints {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pointsSub {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-top: 2px;
 }

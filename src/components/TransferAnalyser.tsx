@@ -11,6 +11,9 @@ interface Transfer {
   playerOut: string;
   costIn: number;
   costOut: number;
+  pointsIn: number;
+  pointsOut: number;
+  pointsImpact: number;
 }
 
 export default function TransferAnalyser() {
@@ -49,6 +52,7 @@ export default function TransferAnalyser() {
               <th>GW</th>
               <th>Player In</th>
               <th>Player Out</th>
+              <th>Pts Impact</th>
               <th>Net Spend</th>
               <th>Time</th>
             </tr>
@@ -66,6 +70,16 @@ export default function TransferAnalyser() {
                   <td className={styles.playerOut}>
                     <span className={styles.arrowOut}>↑</span> {t.playerOut}
                     <span className={styles.price}>£{t.costOut}m</span>
+                  </td>
+                  <td className={t.pointsImpact > 0 ? styles.gain : t.pointsImpact < 0 ? styles.loss : ''}>
+                    <div className={styles.pointsGrid}>
+                      <span className={styles.mainPoints}>
+                        {t.pointsImpact > 0 ? '+' : ''}{t.pointsImpact}
+                      </span>
+                      <span className={styles.pointsSub}>
+                        {t.pointsIn} vs {t.pointsOut}
+                      </span>
+                    </div>
                   </td>
                   <td className={parseFloat(netSpend) > 0 ? styles.positiveSub : styles.negativeSub}>
                     {parseFloat(netSpend) > 0 ? `+£${netSpend}m` : `£${netSpend}m`}
