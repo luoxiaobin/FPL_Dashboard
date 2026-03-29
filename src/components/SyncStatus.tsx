@@ -15,7 +15,7 @@ const RETRY_DELAY_MS = 2000;
 
 export default function SyncStatus() {
   const [status, setStatus] = useState<SyncProgress | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [complete, setComplete] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const lastDoneRef = useRef(0);
@@ -28,7 +28,6 @@ export default function SyncStatus() {
       : '/api/v1/sync';
 
     const eventSource = new EventSource(url);
-    setVisible(true);
 
     eventSource.onmessage = (event) => {
       const data: SyncProgress = JSON.parse(event.data);
