@@ -1,0 +1,35 @@
+[
+  {
+    "version": "0.3.0",
+    "date": "2026-03-29",
+    "title": "Analytics Phase 3 & 4",
+    "changes": [
+      "Real-time Mini-League Standings (Live rank shifts)",
+      "Live Rank Projection (Overall rank deltas)",
+      "Fixture Difficulty Ticker (Next 5 GW per player)",
+      "Enhanced Transfer Analyser (Sorting, Chips, Pts Impact)",
+      "Supabase Database Integration for full historical sync"
+    ]
+  },
+  {
+    "version": "0.2.0",
+    "date": "2026-03-28",
+    "title": "Infrastructure Hub",
+    "changes": [
+      "Next.js App Router migration",
+      "CI/CD Pipeline with GitHub Actions & Vercel",
+      "Automated regression testing suite",
+      "Glassmorphism UI foundation"
+    ]
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-03-27",
+    "title": "MVP Launch",
+    "changes": [
+      "Initial FPL Dashboard release",
+      "Live Squad Pitch view",
+      "Basic Team ID authentication"
+    ]
+  }
+]
