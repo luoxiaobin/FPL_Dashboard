@@ -13,7 +13,12 @@ interface Fixture {
 interface PlayerFixtures {
   id: number;
   name: string;
-  team: string;
+  club: string;
+  teamShort: string;
+  teamForm: string;
+  role: string;
+  status: string | null;
+  chance: number | null;
   position: number;
   fixtures: Fixture[];
 }
@@ -57,7 +62,26 @@ export default function FixtureTicker() {
     <tr key={player.id} className={styles.row}>
       <td className={styles.playerCell}>
         <span className={styles.playerName}>{player.name}</span>
-        <span className={styles.teamName}>{player.team}</span>
+        <div className={styles.playerMeta}>
+          <span className={styles.roleTag}>{player.role}</span>
+          <span className={styles.clubName}>{player.club}</span>
+        </div>
+      </td>
+      <td className={styles.centerCell}>
+        <div className={styles.formBadge}>{player.teamForm}</div>
+      </td>
+      <td className={styles.centerCell}>
+        {player.status ? (
+          <div 
+            className={styles.statusIcon} 
+            title={player.status}
+            style={{ color: player.chance === 0 ? '#ef4444' : '#eab308' }}
+          >
+            ⚠ {player.chance !== null && `${player.chance}%`}
+          </div>
+        ) : (
+          <div className={styles.statusOk}>✔</div>
+        )}
       </td>
       {data.nextGWs.map(gw => {
         const fix = player.fixtures.find(f => f.gw === gw);
@@ -84,7 +108,7 @@ export default function FixtureTicker() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Fixture Difficulty Ticker</h2>
+        <h2 className={styles.title}>Squad Fixture Ticker</h2>
         <div className={styles.gwLabels}>
           {data.nextGWs.map(gw => (
             <span key={gw} className={styles.gwLabel}>GW{gw}</span>
@@ -96,7 +120,9 @@ export default function FixtureTicker() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.playerCol}>Player</th>
+              <th className={styles.playerCol}>Player / Club</th>
+              <th className={styles.gwCol}>Form</th>
+              <th className={styles.gwCol}>Status</th>
               {data.nextGWs.map(gw => <th key={gw} className={styles.gwCol}>GW{gw}</th>)}
             </tr>
           </thead>
@@ -105,7 +131,7 @@ export default function FixtureTicker() {
             {bench.length > 0 && (
               <>
                 <tr className={styles.benchDivider}>
-                  <td colSpan={data.nextGWs.length + 1}>Bench</td>
+                  <td colSpan={data.nextGWs.length + 3}>Bench</td>
                 </tr>
                 {bench.map(renderPlayerRow)}
               </>

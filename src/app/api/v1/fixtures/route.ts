@@ -48,16 +48,23 @@ export async function GET(req: NextRequest) {
     const picksData = await picksRes.json();
 
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
+    const elementTypes = new Map(bootstrap.element_types.map((et: any) => [et.id, et.singular_name_short]));
 
     const players = picksData.picks.slice(0, 15).map((pick: any) => {
       const el: any = elementsMap.get(pick.element) || {};
       const fixtures = fixturesByTeam.get(el.team) || [];
+      const team = bootstrap.teams.find((t: any) => t.id === el.team);
       const sortedFix = [...fixtures].sort((a, b) => a.gw - b.gw).slice(0, 5);
 
       return {
         id: pick.element,
         name: el.web_name || 'Unknown',
-        team: (teamMap.get(el.team) as any)?.short || '?',
+        club: team?.name || '?',
+        teamShort: team?.short_name || '?',
+        teamForm: el.form,
+        role: elementTypes.get(el.element_type) || '?',
+        status: el.news || null,
+        chance: el.chance_of_playing_next_round,
         position: pick.position,
         fixtures: sortedFix,
       };

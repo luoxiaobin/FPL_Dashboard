@@ -78,9 +78,14 @@
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 
+.centerCell {
+  text-align: center;
+}
+
 .playerCell {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .playerName {
@@ -89,9 +94,44 @@
   font-weight: 500;
 }
 
-.teamName {
-  font-size: 0.7rem;
+.playerMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roleTag {
+  font-size: 0.6rem;
+  font-weight: 700;
   color: #64748b;
+  text-transform: uppercase;
+}
+
+.clubName {
+  font-size: 0.65rem;
+  color: #475569;
+}
+
+.formBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.statusIcon {
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: help;
+}
+
+.statusOk {
+  color: #22c55e;
+  font-size: 0.7rem;
+  opacity: 0.5;
 }
 
 .fixCell {
