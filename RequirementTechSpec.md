@@ -110,3 +110,27 @@ Data Freshness & Caching Strategy
 * Mobile Responsiveness: Design must prioritize Mobile-First breakpoints, as 80%+ of traffic occurs via mobile during live matches.
 * Scalability: System must support a 10x surge in concurrent users during live Saturday afternoon kick-offs without performance degradation.
 * Data Consistency: Real-time point updates should synchronize across all user views within 30 seconds of an official API update.
+
+8. Database Sync Architecture (Supabase)
+
+The sync process is triggered automatically after every successful login via a background call to `/api/v1/sync`. 
+
+Sync Pipeline
+
+1. Bootstrap Sync — Fetches `https://fantasy.premierleague.com/api/bootstrap-static/` and upserts:
+   - All 38 `gameweeks` (id, deadline_time, is_current)
+   - All Premier League `players` (id, name, position, current_price, status)
+2. Squad History Sync — Fetches `/api/entry/{id}/history/` and persists:
+   - One `squads` row per gameweek (bank_balance, user_id)
+   - 15 `squad_players` rows per squad (player_id, multiplier, pitch_position)
+3. Idempotency — All writes use `upsert` with `ON CONFLICT` guards. Re-running sync refreshes stale data without creating duplicates.
+
+Data Persisted Per Login
+
+| Table         | Data Stored                                           |
+|---------------|-------------------------------------------------------|
+| users         | fpl_entry_id, team_name, created_at                   |
+| gameweeks     | id, deadline_time, is_current, is_next                |
+| players       | id, web_name, position, current_price, status         |
+| squads        | user_id, gameweek_id, bank_balance                    |
+| squad_players | squad_id, player_id, multiplier, pitch_position       |
