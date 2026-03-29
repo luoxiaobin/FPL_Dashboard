@@ -9,10 +9,12 @@ Engineered with a stunning dark-mode Glassmorphism UI, this application seamless
 *(Note: Vercel provides this permanent, clean URL for free to keep running costs at $0.00. Every individual code push will also silently generate a temporary "Preview" URL with random hash characters that can be safely ignored.)*
 
 * **Public Team ID Authentication:** Securely built on top of the Public FPL Protocol. Simply enter your official numeric FPL Team ID to immediately load your entire dashboard—no email, passwords, or cookies required.
-* **Dynamic Season Trajectory (Recharts):** A fully interactive dual-axis line chart tracking your volatile Gameweek Points perfectly synchronized against your Overall Rank trajectory.
+* **Season Trajectory 2.0 (Recharts):** Advanced dual-axis visualization with Logarithmic Rank scaling, Team Value trends, Average Points benchmarks, and tactical Chip markers (WC, BB, TC, FH).
+* **Mini-League Battleground:** Real-time Rival Gaps Analysis to identify ownership differentials and point deficits against league competitors.
+* **Intelligent Fixture Ticker:** Squad-wide fixture difficulty mapping including player metadata (Club, Form, Position, Injury Status) and heat-mapped intensity.
 * **Live Squad Pitch:** A visual 15-man roster pitch that maps out your active starting XI alongside their live match minutes, BPS, and points.
 * **Bonus Point System (BPS) Radar:** Our intelligent API parser flags high-performing players with golden `[X bps]` indicators or confirmed `[+X B]` markers dynamically across your pitch array during live matches.
-* **Mini-League Standings:** Instantly pulls down your active Classic Leagues and flags your up/down movement patterns against your friends.
+* **Digital Transfer Analyser:** Deep-dive into historical transfer impact, tracking points-hit costs vs. performance gains.
 
 ## 🛠 Tech Stack
 

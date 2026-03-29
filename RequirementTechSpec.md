@@ -18,13 +18,14 @@ MVP Requirements
 The following requirements define the core operational capabilities of the dashboard.
 
 Feature ID	Requirement Description	Priority
-FR-01	Secure synchronization with official FPL user data via session-based authentication.	Must
-FR-02	Real-time "Live Points" display during active Premier League matches.	Must
-FR-03	Automated visual logic for bench substitutions and captaincy multipliers.	Must
-FR-04	Movement indicators (Green/Red arrows) reflecting real-time league rank shifts.	Should
-FR-05	Fixture Difficulty Rating (FDR) integration for a rolling 5-gameweek window.	Should
-FR-06	Historical performance visualization (GW points and rank history).	Could
-FR-07	Optimization engine for transfer suggestions based on projected point algorithms.	Could
+FR-01	Secure synchronization with official FPL user data via session-based authentication.	Must (Done)
+FR-02	Real-time "Live Points" display during active Premier League matches.	Must (Done)
+FR-03	Automated visual logic for bench substitutions and captaincy multipliers.	Must (Done)
+FR-04	Season Trajectory 2.0 with Dual-Axis Log Rank and Chip Markers.	Must (Done)
+FR-05	Fixture Ticker with 5-GW heat-mapped intensity and player metadata.	Must (Done)
+FR-06	Mini-League "Rival Gaps Analysis" comparison engine.	Must (Done)
+FR-07	Transfer Analyser tracking historical performance vs. point hits.	Should (Done)
+FR-08	Optimization engine for transfer suggestions based on projected points.	Could
 
 3. Security and Access Controls
 
