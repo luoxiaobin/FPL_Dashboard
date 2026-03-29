@@ -58,17 +58,34 @@ export default function FixtureTicker() {
   const startingXI = data.players.filter(p => p.position <= 11);
   const bench = data.players.filter(p => p.position > 11);
 
+  const getFormColor = (form: string) => {
+    const f = parseFloat(form);
+    if (f >= 5.0) return '#22c55e'; // blazing - green
+    if (f >= 4.0) return '#38bdf8'; // solid - teal/blue
+    if (f < 2.0) return '#f97316';  // cold - orange
+    return '#94a3b8';               // neutral
+  };
+
   const renderPlayerRow = (player: PlayerFixtures) => (
     <tr key={player.id} className={styles.row}>
       <td className={styles.playerCell}>
         <span className={styles.playerName}>{player.name}</span>
         <div className={styles.playerMeta}>
           <span className={styles.roleTag}>{player.role}</span>
-          <span className={styles.clubName}>{player.club}</span>
+          <span className={styles.clubBadge}>{player.club}</span>
         </div>
       </td>
       <td className={styles.centerCell}>
-        <div className={styles.formBadge}>{player.teamForm}</div>
+        <div 
+          className={styles.formBadge}
+          style={{ 
+            color: getFormColor(player.teamForm),
+            borderColor: getFormColor(player.teamForm),
+            background: `${getFormColor(player.teamForm)}11`
+          }}
+        >
+          {player.teamForm}
+        </div>
       </td>
       <td className={styles.centerCell}>
         {player.status ? (
@@ -121,7 +138,7 @@ export default function FixtureTicker() {
           <thead>
             <tr>
               <th className={styles.playerCol}>Player / Club</th>
-              <th className={styles.gwCol}>Form</th>
+              <th className={styles.gwCol} title="30-day Rolling Avg Pts">Form</th>
               <th className={styles.gwCol}>Status</th>
               {data.nextGWs.map(gw => <th key={gw} className={styles.gwCol}>GW{gw}</th>)}
             </tr>
