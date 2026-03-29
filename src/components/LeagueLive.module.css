@@ -141,3 +141,20 @@
 .up { color: #22c55e; font-weight: 700; }
 .down { color: #ef4444; font-weight: 700; }
 .same { color: #64748b; }
+
+.compareBtn {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.compareBtn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  transform: translateY(-1px);
+}

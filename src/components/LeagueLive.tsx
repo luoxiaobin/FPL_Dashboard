@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './LeagueLive.module.css';
+import RivalCompare from './RivalCompare';
 
 interface LeagueRival {
   entry: number;
@@ -23,6 +24,16 @@ interface LeagueData {
 export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onBack: () => void }) {
   const [data, setData] = useState<LeagueData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [compareRival, setCompareRival] = useState<{ id: number; name: string } | null>(null);
+
+  const getMyEntryId = () => {
+    return document.cookie
+      .split('; ')
+      .find(row => row.startsWith('fpl_entry_id='))
+      ?.split('=')[1];
+  };
+
+  const myEntryId = getMyEntryId();
 
   useEffect(() => {
     fetch(`/api/v1/leagues/live?id=${leagueId}`)
@@ -41,6 +52,15 @@ export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onB
 
   return (
     <div className={styles.container}>
+      {compareRival && myEntryId && (
+        <RivalCompare 
+          myId={myEntryId}
+          rivalId={compareRival.id}
+          rivalName={compareRival.name}
+          onClose={() => setCompareRival(null)}
+        />
+      )}
+
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={onBack}>← All Leagues</button>
         <h2 className={styles.title}>{data.league_name} <span className={styles.liveBadge}>LIVE</span></h2>
@@ -55,6 +75,7 @@ export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onB
               <th>GW Pts</th>
               <th>Total</th>
               <th>Move</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -75,6 +96,14 @@ export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onB
                 <td className={styles.totalCell}>{rival.live_total}</td>
                 <td className={rival.movement > 0 ? styles.up : rival.movement < 0 ? styles.down : styles.same}>
                   {rival.movement > 0 ? `▲${rival.movement}` : rival.movement < 0 ? `▼${Math.abs(rival.movement)}` : '—'}
+                </td>
+                <td>
+                  <button 
+                    className={styles.compareBtn}
+                    onClick={() => setCompareRival({ id: rival.entry, name: rival.player_name })}
+                  >
+                    Compare
+                  </button>
                 </td>
               </tr>
             ))}
