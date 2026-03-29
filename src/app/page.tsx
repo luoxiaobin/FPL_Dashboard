@@ -12,9 +12,11 @@ import SyncStatus from '../components/SyncStatus';
 import RankProjection from '../components/RankProjection';
 import FixtureTicker from '../components/FixtureTicker';
 import TransferAnalyser from '../components/TransferAnalyser';
+import LeagueLive from '../components/LeagueLive';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
+  const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -116,8 +118,17 @@ export default function DashboardShell() {
           </div>
 
           <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>League Standings</h2>
-            <LeagueStandings />
+            <h2 className={styles.panelTitle}>
+              {viewingLeagueId ? 'Live Standings' : 'League Standings'}
+            </h2>
+            {viewingLeagueId ? (
+              <LeagueLive 
+                leagueId={viewingLeagueId} 
+                onBack={() => setViewingLeagueId(null)} 
+              />
+            ) : (
+              <LeagueStandings onViewLive={(id) => setViewingLeagueId(id)} />
+            )}
           </div>
         </div>
       </div>

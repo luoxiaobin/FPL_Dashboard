@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import styles from './LeagueStandings.module.css';
 
-export default function LeagueStandings() {
+export default function LeagueStandings({ onViewLive }: { onViewLive: (id: number) => void }) {
   const [leaguesData, setLeaguesData] = useState<any>(null);
 
   useEffect(() => {
@@ -25,6 +25,12 @@ export default function LeagueStandings() {
               {league.movement === 'up' ? '▲ Up' : league.movement === 'down' ? '▼ Down' : '— No Change'}
             </div>
           </div>
+          <button 
+            className={styles.liveBtn}
+            onClick={() => onViewLive(league.league_id)}
+          >
+            Live
+          </button>
         </div>
       ))}
     </div>
