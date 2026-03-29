@@ -5,8 +5,8 @@ Engineered with a stunning dark-mode Glassmorphism UI, this application seamless
 
 ## 🌟 Key Features
 
-**🟢 Live Production URL:** [https://your-vercel-project-name.vercel.app](https://your-vercel-project-name.vercel.app)
-*(Update this placeholder link with the exact URL Vercel generated for your project)*
+**🟢 Live Production URL:** [https://fpl-dashboard.vercel.app](https://fpl-dashboard.vercel.app)
+*(If this default Vercel URL throws an error, please check your Vercel dashboard for the exact URL generated.)*
 
 * **Public Team ID Authentication:** Securely built on top of the Public FPL Protocol. Simply enter your official numeric FPL Team ID to immediately load your entire dashboard—no email, passwords, or cookies required.
 * **Dynamic Season Trajectory (Recharts):** A fully interactive dual-axis line chart tracking your volatile Gameweek Points perfectly synchronized against your Overall Rank trajectory.
