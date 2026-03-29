@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './SyncStatus.module.css';
 
 interface SyncProgress {
@@ -10,36 +10,56 @@ interface SyncProgress {
   total?: number;
 }
 
+const MAX_RETRIES = 5;
+const RETRY_DELAY_MS = 2000;
+
 export default function SyncStatus() {
   const [status, setStatus] = useState<SyncProgress | null>(null);
   const [visible, setVisible] = useState(false);
   const [complete, setComplete] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const lastDoneRef = useRef(0);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/v1/sync');
+    if (complete) return;
+
+    const url = lastDoneRef.current > 0
+      ? `/api/v1/sync?from=${lastDoneRef.current}`
+      : '/api/v1/sync';
+
+    const eventSource = new EventSource(url);
     setVisible(true);
 
     eventSource.onmessage = (event) => {
       const data: SyncProgress = JSON.parse(event.data);
       setStatus(data);
+      if (data.done != null) lastDoneRef.current = data.done;
 
       if (data.step === 'complete' || data.step === 'error') {
         setComplete(true);
         eventSource.close();
-        // Auto-dismiss after 4 seconds
         setTimeout(() => setVisible(false), 4000);
       }
     };
 
     eventSource.onerror = () => {
-      setStatus({ step: 'error', message: 'Sync connection lost' });
-      setComplete(true);
       eventSource.close();
-      setTimeout(() => setVisible(false), 4000);
+      if (retryCount < MAX_RETRIES && !complete) {
+        setRetryCount(r => r + 1);
+        setStatus(prev => prev
+          ? { ...prev, message: `Connection lost — retrying (${retryCount + 1}/${MAX_RETRIES})...` }
+          : null
+        );
+        setTimeout(() => {}, RETRY_DELAY_MS); // triggers re-render via retryCount update
+      } else {
+        setStatus({ step: 'error', message: 'Sync failed after max retries' });
+        setComplete(true);
+        setTimeout(() => setVisible(false), 4000);
+      }
     };
 
     return () => eventSource.close();
-  }, []);
+  }, [retryCount, complete]);
 
   if (!visible || !status) return null;
 

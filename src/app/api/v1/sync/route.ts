@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const entryId = req.cookies.get('fpl_entry_id')?.value;
+  const fromParam = req.nextUrl.searchParams.get('from');
+  const resumeFrom = fromParam ? parseInt(fromParam) : 0;
   
   if (!entryId) {
     return new Response('Unauthorized', { status: 401 });
@@ -71,9 +73,9 @@ export async function GET(req: NextRequest) {
         const history = await historyRes.json();
         const totalGWs = history.current.length;
 
-        send({ step: 'picks_start', message: `Syncing ${totalGWs} gameweek squads...`, total: totalGWs, done: 0 });
+        send({ step: 'picks_start', message: `Syncing ${totalGWs} gameweek squads...`, total: totalGWs, done: resumeFrom });
 
-        for (let i = 0; i < totalGWs; i++) {
+        for (let i = resumeFrom; i < totalGWs; i++) {
           const gw = history.current[i];
 
           const { data: squadData } = await supabase
