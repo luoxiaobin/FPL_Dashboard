@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Persist user profile to Supabase (upsert gracefully handles returning users)
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from('users')
       .upsert(
         { fpl_entry_id: entryId, team_name: teamName },
