@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,30 +25,42 @@ export async function POST(req: NextRequest) {
 
     const meData = await meRes.json();
     const entryId = meData.id;
+    const teamName = meData.name;
 
     if (!entryId) {
       return NextResponse.json({ success: false, error: 'Invalid response from FPL.' }, { status: 404 });
     }
 
+    // Persist user profile to Supabase (upsert gracefully handles returning users)
+    const { error: dbError } = await supabase
+      .from('users')
+      .upsert(
+        { fpl_entry_id: entryId, team_name: teamName },
+        { onConflict: 'fpl_entry_id' }
+      );
+
+    if (dbError) {
+      // Log but don't block login — DB write is best-effort
+      console.error('Supabase upsert error:', dbError.message);
+    }
+
     const response = NextResponse.json({ success: true, entryId });
 
-    // Store purely the public entry_id
+    // Store purely the public entry_id in a secure cookie
     response.cookies.set({
       name: 'fpl_entry_id',
       value: entryId.toString(),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 60 * 60 * 24 * 365 // 1 year cookie since it's just public data!
+      maxAge: 60 * 60 * 24 * 365 // 1 year
     });
-
-    // Note: We are NO LONGER setting secure `pl_profile` or `session` cookies!
-    // FPL Dashboards running off Option 1 only require the Team ID.
 
     return response;
 
-  } catch (error: any) {
-    console.error('Login Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Login Error:', message);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }
