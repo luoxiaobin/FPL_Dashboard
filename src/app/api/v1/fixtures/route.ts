@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
 
-    const players = picksData.picks.slice(0, 11).map((pick: any) => {
+    const players = picksData.picks.slice(0, 15).map((pick: any) => {
       const el: any = elementsMap.get(pick.element) || {};
       const fixtures = fixturesByTeam.get(el.team) || [];
       const sortedFix = [...fixtures].sort((a, b) => a.gw - b.gw).slice(0, 5);
@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
         id: pick.element,
         name: el.web_name || 'Unknown',
         team: (teamMap.get(el.team) as any)?.short || '?',
+        position: pick.position,
         fixtures: sortedFix,
       };
     });

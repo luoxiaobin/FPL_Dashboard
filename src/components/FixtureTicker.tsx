@@ -14,6 +14,7 @@ interface PlayerFixtures {
   id: number;
   name: string;
   team: string;
+  position: number;
   fixtures: Fixture[];
 }
 
@@ -49,6 +50,37 @@ export default function FixtureTicker() {
 
   if (!data || !data.players?.length) return null;
 
+  const startingXI = data.players.filter(p => p.position <= 11);
+  const bench = data.players.filter(p => p.position > 11);
+
+  const renderPlayerRow = (player: PlayerFixtures) => (
+    <tr key={player.id} className={styles.row}>
+      <td className={styles.playerCell}>
+        <span className={styles.playerName}>{player.name}</span>
+        <span className={styles.teamName}>{player.team}</span>
+      </td>
+      {data.nextGWs.map(gw => {
+        const fix = player.fixtures.find(f => f.gw === gw);
+        return (
+          <td key={gw} className={styles.fixCell}>
+            {fix ? (
+              <div
+                className={styles.fixChip}
+                style={{ background: difficultyColor(fix.difficulty) }}
+                title={`GW${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
+              >
+                {fix.opponent}
+                <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
+              </div>
+            ) : (
+              <div className={styles.blankChip}>—</div>
+            )}
+          </td>
+        );
+      })}
+    </tr>
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -69,33 +101,15 @@ export default function FixtureTicker() {
             </tr>
           </thead>
           <tbody>
-            {data.players.map(player => (
-              <tr key={player.id} className={styles.row}>
-                <td className={styles.playerCell}>
-                  <span className={styles.playerName}>{player.name}</span>
-                  <span className={styles.teamName}>{player.team}</span>
-                </td>
-                {data.nextGWs.map(gw => {
-                  const fix = player.fixtures.find(f => f.gw === gw);
-                  return (
-                    <td key={gw} className={styles.fixCell}>
-                      {fix ? (
-                        <div
-                          className={styles.fixChip}
-                          style={{ background: difficultyColor(fix.difficulty) }}
-                          title={`GW${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
-                        >
-                          {fix.opponent}
-                          <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
-                        </div>
-                      ) : (
-                        <div className={styles.blankChip}>—</div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {startingXI.map(renderPlayerRow)}
+            {bench.length > 0 && (
+              <>
+                <tr className={styles.benchDivider}>
+                  <td colSpan={data.nextGWs.length + 1}>Bench</td>
+                </tr>
+                {bench.map(renderPlayerRow)}
+              </>
+            )}
           </tbody>
         </table>
       </div>

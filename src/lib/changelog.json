@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.3.1",
+    "date": "2026-03-29",
+    "title": "Squad Coverage Hotfix",
+    "changes": [
+      "Include Bench players in Fixture Difficulty Ticker",
+      "Added visual 'Bench' separator to fixture table"
+    ]
+  },
+  {
     "version": "0.3.0",
     "date": "2026-03-29",
     "title": "Analytics Phase 3 & 4",
