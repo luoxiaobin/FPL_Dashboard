@@ -13,6 +13,20 @@ import {
 } from 'recharts';
 import styles from './HistoryChart.module.css';
 
+// Custom Tooltip formatter moved outside to prevent re-creation during render
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{ background: '#1e293b', padding: '10px', border: '1px solid #334155', borderRadius: '8px' }}>
+        <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>GW {label}</p>
+        <p style={{ margin: '0', color: '#22c55e' }}>Points: {payload[0].value}</p>
+        <p style={{ margin: '0', color: '#38bdf8' }}>Rank: {payload[1].value.toLocaleString()}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function HistoryChart() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,19 +46,6 @@ export default function HistoryChart() {
   if (loading) return <div className={styles.container} style={{ textAlign: 'center', opacity: 0.5 }}>Loading Chart...</div>;
   if (!history.length) return null;
 
-  // Custom Tooltip formatter
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div style={{ background: '#1e293b', padding: '10px', border: '1px solid #334155', borderRadius: '8px' }}>
-          <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>GW {label}</p>
-          <p style={{ margin: '0', color: '#22c55e' }}>Points: {payload[0].value}</p>
-          <p style={{ margin: '0', color: '#38bdf8' }}>Rank: {payload[1].value.toLocaleString()}</p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className={styles.container}>
