@@ -8,6 +8,7 @@ import LeagueStandings from '../components/LeagueStandings';
 import SquadPitch from '../components/SquadPitch';
 import HistoryChart from '../components/HistoryChart';
 import GameweekHistory from '../components/GameweekHistory';
+import SyncStatus from '../components/SyncStatus';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
@@ -35,6 +36,7 @@ export default function DashboardShell() {
 
   return (
     <div className={styles.container}>
+      <SyncStatus />
       <header className={styles.header}>
         <h1 className={styles.title}>
           {summary ? summary.team_name : 'Loading Team...'}
