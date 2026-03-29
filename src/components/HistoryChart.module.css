@@ -13,11 +13,31 @@
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
 }
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trendBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  width: fit-content;
+}
+
+.trendBadge[data-trend="Improving"] { color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); background: rgba(34, 197, 94, 0.05); }
+.trendBadge[data-trend="Declining"] { color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); }
+.trendBadge[data-trend="Stable"] { color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
 
 .title {
   font-size: 1.25rem;
@@ -32,6 +52,7 @@
 .statsRow {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .statBadge {
@@ -56,6 +77,27 @@
   font-size: 1rem;
   font-weight: 800;
   color: #e2e8f0;
+}
+
+.chipsRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.chipTag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.noChips {
+  font-size: 0.7rem;
+  color: #475569;
 }
 
 .chartContainer {

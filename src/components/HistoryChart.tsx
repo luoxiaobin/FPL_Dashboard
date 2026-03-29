@@ -36,31 +36,47 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function HistoryChart() {
   const [history, setHistory] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/user/history')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.current) {
-          setHistory(data.current);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch('/api/v1/user/history').then(res => res.json()),
+      fetch('/api/v1/user/summary').then(res => res.json())
+    ]).then(([hData, sData]) => {
+      if (hData?.current) setHistory(hData.current);
+      setSummary(sData);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div className={styles.container} style={{ textAlign: 'center', opacity: 0.5 }}>Loading Trajectory...</div>;
-  if (!history.length) return null;
+  if (!history.length || !summary) return null;
 
   const current = history[history.length - 1];
   const bestRank = Math.min(...history.map(h => h.overall_rank));
 
+  const chipLabels: Record<string, string> = {
+    'bboost': 'BB',
+    '3xc': 'TC',
+    'wildcard': 'WC',
+    'freehit': 'FH'
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Season Trajectory</h2>
+        <div className={styles.titleGroup}>
+          <h2 className={styles.title}>Season Trajectory</h2>
+          <div className={styles.trendBadge} data-trend={summary.trend}>
+            {summary.trend === 'Improving' ? '▲ Improving' : summary.trend === 'Declining' ? '▼ Declining' : '● Stable'}
+          </div>
+        </div>
         <div className={styles.statsRow}>
+          <div className={styles.statBadge}>
+            <span className={styles.statLabel}>Team Value</span>
+            <span className={styles.statValue} style={{ color: '#eab308' }}>£{summary.total_value}m</span>
+          </div>
           <div className={styles.statBadge}>
             <span className={styles.statLabel}>Season High</span>
             <span className={styles.statValue} style={{ color: '#38bdf8' }}>#{bestRank.toLocaleString()}</span>
@@ -72,6 +88,15 @@ export default function HistoryChart() {
           <div className={styles.statBadge}>
             <span className={styles.statLabel}>Total Points</span>
             <span className={styles.statValue} style={{ color: '#22c55e' }}>{current.total_points}</span>
+          </div>
+          <div className={styles.statBadge}>
+            <span className={styles.statLabel}>Chips Avail.</span>
+            <div className={styles.chipsRow}>
+              {summary.available_chips.map((c: string) => (
+                <span key={c} className={styles.chipTag}>{chipLabels[c] || c}</span>
+              ))}
+              {summary.available_chips.length === 0 && <span className={styles.noChips}>None</span>}
+            </div>
           </div>
         </div>
       </div>
