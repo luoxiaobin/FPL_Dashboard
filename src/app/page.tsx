@@ -7,6 +7,7 @@ import LivePoints from '../components/LivePoints';
 import LeagueStandings from '../components/LeagueStandings';
 import SquadPitch from '../components/SquadPitch';
 import HistoryChart from '../components/HistoryChart';
+import GameweekHistory from '../components/GameweekHistory';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
@@ -92,6 +93,7 @@ export default function DashboardShell() {
       </div>
 
       <HistoryChart />
+      <GameweekHistory />
 
       <div className={styles.mainGrid}>
         <div className={styles.panel}>
