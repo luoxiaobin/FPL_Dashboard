@@ -7,12 +7,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 1. Fetch Transfer History
-    const transRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/transfers/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    if (!transRes.ok) throw new Error('Failed to fetch transfer history');
+    // 1. Fetch Transfer History, Chips, and Entry History
+    const [transRes, historyRes] = await Promise.all([
+      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/transfers/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    ]);
+
+    if (!transRes.ok || !historyRes.ok) throw new Error('Failed to fetch FPL history');
     const transfers = await transRes.json();
+    const history = await historyRes.json();
+    
+    const chipsMap = new Map(history.chips?.map((c: any) => [c.event, c.name]));
+    const hitsMap = new Map(history.current?.map((h: any) => [h.event, h.event_transfers_cost]));
 
     // 2. Fetch Bootstrap for player names
     const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
@@ -59,6 +65,8 @@ export async function GET(req: NextRequest) {
         pointsIn,
         pointsOut,
         pointsImpact: pointsIn - pointsOut,
+        chip: chipsMap.get(t.event) || null,
+        hitCost: hitsMap.get(t.event) || 0,
       };
     }));
 

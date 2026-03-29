@@ -11,8 +11,20 @@
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
 }
 
 .title {
@@ -64,6 +76,16 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
+.sortable {
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.sortable:hover {
+  color: #e2e8f0;
+}
+
 .row td {
   padding: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -73,6 +95,21 @@
   font-weight: 600;
   color: #94a3b8;
   font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chipBadge {
+  font-size: 0.6rem;
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  width: fit-content;
 }
 
 .playerIn {
