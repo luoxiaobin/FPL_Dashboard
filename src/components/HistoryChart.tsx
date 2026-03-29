@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { 
-  LineChart, 
+  ComposedChart,
   Line, 
+  Bar,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -13,14 +14,20 @@ import {
 } from 'recharts';
 import styles from './HistoryChart.module.css';
 
-// Custom Tooltip formatter moved outside to prevent re-creation during render
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ background: '#1e293b', padding: '10px', border: '1px solid #334155', borderRadius: '8px' }}>
-        <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>GW {label}</p>
-        <p style={{ margin: '0', color: '#22c55e' }}>Points: {payload[0].value}</p>
-        <p style={{ margin: '0', color: '#38bdf8' }}>Rank: {payload[1].value.toLocaleString()}</p>
+      <div className={styles.tooltip}>
+        <p className={styles.tooltipLabel}>GW {label}</p>
+        <div className={styles.tooltipItem} style={{ color: '#22c55e' }}>
+          <span>Total Points:</span> <span>{payload[1].value}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ color: '#38bdf8' }}>
+          <span>Overall Rank:</span> <span>{payload[2].value.toLocaleString()}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ color: '#94a3b8' }}>
+          <span>GW Points:</span> <span>{payload[0].value}</span>
+        </div>
       </div>
     );
   }
@@ -43,51 +50,93 @@ export default function HistoryChart() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className={styles.container} style={{ textAlign: 'center', opacity: 0.5 }}>Loading Chart...</div>;
+  if (loading) return <div className={styles.container} style={{ textAlign: 'center', opacity: 0.5 }}>Loading Trajectory...</div>;
   if (!history.length) return null;
 
+  const current = history[history.length - 1];
+  const bestRank = Math.min(...history.map(h => h.overall_rank));
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Season Trajectory</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Season Trajectory</h2>
+        <div className={styles.statsRow}>
+          <div className={styles.statBadge}>
+            <span className={styles.statLabel}>Season High</span>
+            <span className={styles.statValue} style={{ color: '#38bdf8' }}>#{bestRank.toLocaleString()}</span>
+          </div>
+          <div className={styles.statBadge}>
+            <span className={styles.statLabel}>Current Rank</span>
+            <span className={styles.statValue}>#{current.overall_rank.toLocaleString()}</span>
+          </div>
+          <div className={styles.statBadge}>
+            <span className={styles.statLabel}>Total Points</span>
+            <span className={styles.statValue} style={{ color: '#22c55e' }}>{current.total_points}</span>
+          </div>
+        </div>
+      </div>
+
       <div className={styles.chartContainer}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={history} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-            <XAxis dataKey="event" stroke="#94a3b8" tick={{fill: '#94a3b8'}} />
+          <ComposedChart data={history} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.3} />
+            <XAxis 
+              dataKey="event" 
+              stroke="#64748b" 
+              tick={{fill: '#64748b', fontSize: 10}}
+              axisLine={false}
+              tickLine={false}
+            />
             
-            {/* Left Y Axis for Points */}
+            {/* Left Axis: Points */}
             <YAxis 
               yAxisId="points" 
               stroke="#22c55e" 
-              tick={{fill: '#94a3b8'}}
+              tick={{fill: '#64748b', fontSize: 10}}
               orientation="left"
+              axisLine={false}
+              tickLine={false}
+              domain={['dataMin - 50', 'dataMax + 50']}
             />
             
-            {/* Right Y Axis for Overall Rank (Reversed so lower rank is visually higher) */}
+            {/* Right Axis: Log Rank */}
             <YAxis 
               yAxisId="rank" 
               stroke="#38bdf8" 
-              tick={{fill: '#94a3b8'}}
+              tick={{fill: '#64748b', fontSize: 10}}
               orientation="right"
               reversed={true}
+              scale="log"
               domain={['auto', 'auto']}
-              tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : `${(val / 1000).toFixed(0)}k`}
             />
             
             <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36}/>
             
+            {/* GW Points Bar (Background) */}
+            <Bar
+              yAxisId="points"
+              dataKey="points"
+              fill="rgba(56, 189, 248, 0.05)"
+              barSize={20}
+              name="GW Points"
+            />
+
+            {/* Total Points Line */}
             <Line 
               yAxisId="points"
-              type="monotone" 
-              dataKey="points" 
-              name="GW Points" 
+              type="stepAfter" 
+              dataKey="total_points" 
+              name="Total Points" 
               stroke="#22c55e" 
               strokeWidth={3}
-              activeDot={{ r: 6 }} 
               dot={false}
+              activeDot={{ r: 4 }}
             />
+
+            {/* Overall Rank Line */}
             <Line 
               yAxisId="rank"
               type="monotone" 
@@ -96,8 +145,9 @@ export default function HistoryChart() {
               stroke="#38bdf8" 
               strokeWidth={2}
               dot={false}
+              activeDot={{ r: 4 }}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
