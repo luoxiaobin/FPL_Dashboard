@@ -93,10 +93,10 @@ To adhere to the "low-cost" mandate, the architecture leverages serverless tiers
 
 Deployment Roadmap
 
-1. Frontend: Deploy a React/Next.js frontend to Vercel or Netlify (Free/Hobby Tier), utilizing their global CDN.
-2. Backend Logic: Implement logic via GitHub Actions (CI/CD) for deployment to AWS Lambda (Free Tier) or Vercel Functions.
-3. Persistence: Use MongoDB Atlas (Shared Cluster - Free Tier) or Supabase (Hobby Tier) for user settings.
-4. CI/CD Pipeline: Utilize GitHub Actions (Free Tier) for automated testing and deployment on every merge to the main branch.
+1. Frontend & Routing: Deploy a React/Next.js frontend with its API proxy routes to Vercel (Hobby Tier). We are intentionally utilizing Vercel's free default `.app` domain suffix (`https://fpl-dashboard-luoxiaobins-projects.vercel.app`) to strictly adhere to the $0.00 MVP startup costs.
+2. Custom Domain Scaling: If the dashboard expands heavily past Phase 3 or requires a distinct brand (e.g., `fpl-dashboard.com`), a custom top-level domain can be purchased for ~$15/year through a registrar and seamlessly connected within the Vercel Dashboard -> Settings -> Domains portal for no added hosting charge.
+3. Persistence: Use Supabase (Hobby Tier) for the PostgreSQL database managing user settings, tracking the `fpl_entry_id` securely.
+4. CI/CD Pipeline: Utilize GitHub Actions (Free Tier) to run Vitest and Playwright regressions simultaneously on every merge to the main branch. Vercel automatically deploys the application.
 
 Data Freshness & Caching Strategy
 
