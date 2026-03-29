@@ -20,28 +20,61 @@ Engineered with a stunning dark-mode Glassmorphism UI, this application seamless
 * **Language:** TypeScript
 * **Styling:** Vanilla CSS Modules (Glassmorphism design language)
 * **Data Visualization:** Recharts
+* **Database:** Supabase (PostgreSQL) — persists user profiles, full player list, gameweek data, and squad history
 * **Backend:** Native Next.js Serverless Proxy Routes (`/api/v1/...`)
+* **CI/CD:** GitHub Actions + Vercel (auto-deploy on every push to `master`)
 
 ## 🚀 Getting Started
 
-1. Clone the repository and install dependencies:
-   ```bash
-   npm install
-   ```
+### 1. Clone & Install
+```bash
+git clone https://github.com/luoxiaobin/FPL_Dashboard.git
+cd FPL_Dashboard
+npm install
+```
 
-2. Run the development server:
-   ```bash
-   npm run dev
-   ```
+### 2. Configure Environment Variables
+Create a `.env.local` file in the project root:
+```env
+# Supabase — get these from supabase.com → Project Settings → API Keys
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...   # "Publishable key" tab
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...             # "Secret keys" tab — NEVER expose to browser
+```
 
-3. Open [http://localhost:3000](http://localhost:3000) with your browser.
+> ⚠️ **Security note:** `SUPABASE_SERVICE_ROLE_KEY` bypasses Supabase Row Level Security and is used exclusively in server-side API routes. It must **never** be prefixed with `NEXT_PUBLIC_`.
 
-4. You will be actively redirected to the secure `/login` portal. Enter any valid numeric FPL Team ID (e.g. `123456`) to access the dashboard!
+### 3. Set Up Supabase Database
+1. Go to your Supabase project → **SQL Editor**
+2. Paste the full contents of `supabase/schema.sql` and click **Run**
+3. This creates all 5 tables: `users`, `players`, `gameweeks`, `squads`, `squad_players`
+
+### 4. Configure Vercel (Production)
+In Vercel → **Settings → Environment Variables**, add all three variables:
+
+| Variable | Source |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API Keys page |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Secret key |
+
+### 5. Run Locally
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) and log in with your FPL Team ID.
 
 ## 🔮 Future Roadmap (Phase 3)
 
 - **Live Rank Projections:** Injecting a third-party LiveFPL API to calculate live intra-gameweek rank movements.
 - **Transfers Analyzer:** Analyzing historical point hits and tracking upcoming fixture difficulty.
 - **Fixture Ticker:** A visual queue of upcoming opponents mapped directly onto the squad pitch.
+
+## 🧪 Running Tests
+```bash
+npm run test      # Vitest unit tests
+npm run lint      # ESLint
+npm run build     # Production build check
+```
 
 *Built for FPL Managers who demand data delivered with aesthetic excellence.*
