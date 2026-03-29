@@ -1,0 +1,96 @@
+.pitch {
+  background: linear-gradient(180deg, #166534 0%, #15803d 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.pitch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pitch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.bench {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 24px;
+}
+
+.playerCard {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  min-width: 90px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.playerCard:hover {
+  transform: scale(1.05);
+  border-color: #38bdf8;
+}
+
+.playerName {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.playerPoints {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 4px 0;
+}
+
+.playerPrice {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.captainTag {
+  background: #eab308;
+  color: #000;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
