@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.4.0",
+    "date": "2026-03-30",
+    "title": "Phase 3 Completion: Advanced Analytics",
+    "changes": [
+      "Official Rank Integration: Dynamic toggle for Live vs. Official GW rank status",
+      "Enhanced Season Trajectory: Dual-axis Points/Rank line charts with log scaling",
+      "AI Captaincy Adviser: Integrated expected points (xP) analysis into the pitch",
+      "Fixture Heat-mapping: Club highlighting and form-based color coding in ticker",
+      "Refined Transfer Impact: Sorted analysis of hits vs. points gained",
+      "Hotfix: Resolved RankProjection dashboard build error"
+    ]
+  },
+  {
     "version": "0.3.1",
     "date": "2026-03-29",
     "title": "Squad Coverage Hotfix",
