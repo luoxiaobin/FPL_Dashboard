@@ -13,13 +13,31 @@
 .down  { border-color: rgba(239, 68, 68, 0.35); }
 .neutral { border-color: var(--glass-border); }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .label {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #64748b;
-  margin-bottom: 16px;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 
 .loadingText, .noGW {
@@ -33,7 +51,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .rankBlock {
@@ -41,39 +59,66 @@
 }
 
 .rankValue {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #e2e8f0;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
 }
 
 .rankSub {
   font-size: 0.7rem;
   color: #64748b;
+  font-weight: 600;
   margin-top: 2px;
 }
 
 .deltaBlock {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 1.2rem;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 30px;
-  background: rgba(255,255,255,0.04);
+  font-weight: 800;
+  padding: 10px 20px;
+  border-radius: 50px;
+  background: rgba(255,255,255,0.03);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
 }
 
 .deltaUp   { color: #22c55e; }
 .deltaDown { color: #ef4444; }
 
-.arrow { font-size: 1rem; }
-.deltaValue { font-size: 1.1rem; }
+.arrow { font-size: 1.1rem; }
+.deltaValue { font-size: 1.2rem; }
+
+.tierTracker {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.tierValue {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.tierLabel {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
 
 .statsRow {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-top: 12px;
+  padding-top: 16px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -85,15 +130,16 @@
 }
 
 .statLabel {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
 .statValue {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: #e2e8f0;
   margin-top: 2px;
 }
@@ -104,4 +150,5 @@
 .divider {
   color: #334155;
   font-size: 1.2rem;
+  opacity: 0.5;
 }

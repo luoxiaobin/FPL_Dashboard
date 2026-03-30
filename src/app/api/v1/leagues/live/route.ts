@@ -78,7 +78,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       league_name: leagueData.league.name,
-      standings: finalStandings
+      standings: finalStandings,
+      total_entries: leagueData.standings.results.length // For mini-leagues we usually have all in one page, or we can use the league metadata
     });
 
   } catch (error: any) {

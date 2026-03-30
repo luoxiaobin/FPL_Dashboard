@@ -13,13 +13,16 @@ import RankProjection from '../components/RankProjection';
 import FixtureTicker from '../components/FixtureTicker';
 import TransferAnalyser from '../components/TransferAnalyser';
 import LeagueLive from '../components/LeagueLive';
+import CaptaincyAdviser from '../components/CaptaincyAdviser';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
+  const [liveSquad, setLiveSquad] = useState<any>(null);
   const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    // Fetch Summary
     fetch('/api/v1/user/summary')
       .then(async (res) => {
         if (res.status === 401) {
@@ -29,11 +32,17 @@ export default function DashboardShell() {
         return res.json();
       })
       .then(data => {
-        if (data && !data.error) {
-          setSummary(data);
-        }
+        if (data && !data.error) setSummary(data);
+      });
+
+    // Fetch Live Squad for Projection
+    fetch('/api/v1/squad/live')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) setLiveSquad(data);
       });
   }, [router]);
+
   const handleLogout = async () => {
     await fetch('/api/v1/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -78,11 +87,16 @@ export default function DashboardShell() {
           <div className={styles.statValue}>
             {summary?.overall_rank.toLocaleString() ?? '-'}
           </div>
+          {summary?.overall_rank && summary?.total_players && (
+            <div className={styles.statBadge}>
+              Top {((summary.overall_rank / summary.total_players) * 100).toFixed(1)}%
+            </div>
+          )}
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Points</div>
-          <div className={styles.statValue}>
-            {summary?.total_points.toLocaleString() ?? '-'}
+        <div className={styles.statCard} style={{ border: '1px solid rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.05)' }}>
+          <div className={styles.statLabel} style={{ color: '#22c55e' }}>Live Projected</div>
+          <div className={styles.statValue} style={{ color: '#22c55e' }}>
+            {liveSquad?.projected_points ?? '-'}
           </div>
         </div>
         <div className={styles.statCard}>
@@ -99,6 +113,7 @@ export default function DashboardShell() {
         </div>
       </div>
 
+      <CaptaincyAdviser />
       <RankProjection />
       <HistoryChart />
       <GameweekHistory />

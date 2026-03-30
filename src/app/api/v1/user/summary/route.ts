@@ -18,10 +18,23 @@ export async function GET(req: NextRequest) {
     const data = await entryRes.json();
     const history = await historyRes.json();
 
-    const usedChips = new Set(history.chips.map((c: any) => c.name));
+    // Determine current phase (GW 1-19 or GW 20-38)
+    const currentGW = data.current_event || 0;
+    const isSecondHalf = currentGW >= 20;
+    const phaseStart = isSecondHalf ? 20 : 1;
+    const phaseEnd = isSecondHalf ? 38 : 19;
+
+    // Standard FPL chip names
     const allChips = ['bboost', '3xc', 'wildcard', 'freehit'];
-    // Note: FPL has 2 wildcards, but for simplicity we'll show the main categories
-    const availableChips = allChips.filter(c => !usedChips.has(c));
+    
+    // Filter used chips to only those used in the CURRENT phase
+    const usedInPhase = new Set(
+      (history.chips || [])
+        .filter((c: any) => c.event >= phaseStart && c.event <= phaseEnd)
+        .map((c: any) => c.name)
+    );
+
+    const availableChips = allChips.filter(c => !usedInPhase.has(c));
 
     // Calculate Trend (compare current rank vs 3 GWs ago)
     const currentGWs = history.current;
@@ -33,11 +46,15 @@ export async function GET(req: NextRequest) {
       else if (now > then * 1.05) trend = 'Declining';
     }
 
+    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const bootstrap = await bootstrapRes.json();
+
     return NextResponse.json({
       user_id: data.id,
       team_name: data.name,
       overall_rank: data.summary_overall_rank || 0,
       total_points: data.summary_overall_points || 0,
+      total_players: bootstrap.total_players || 11000000,
       bank_balance: (data.last_deadline_bank || 0) / 10,
       total_value: (data.last_deadline_value + (data.last_deadline_bank || 0)) / 10,
       available_chips: availableChips,

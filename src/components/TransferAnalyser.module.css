@@ -113,26 +113,63 @@
 }
 
 .playerIn {
-  color: #22c55e;
+  color: #e2e8f0;
   font-weight: 500;
 }
 
 .playerOut {
-  color: #64748b;
+  color: #e2e8f0;
 }
 
-.arrowIn { color: #22c55e; margin-right: 4px; }
-.arrowOut { color: #ef4444; margin-right: 4px; }
+.playerInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.playerName {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.arrowIn { color: #22c55e; margin-right: 2px; font-weight: 900; }
+.arrowOut { color: #ef4444; margin-right: 2px; font-weight: 900; }
 
 .price {
-  display: block;
   font-size: 0.7rem;
-  opacity: 0.6;
-  margin-top: 2px;
+  opacity: 0.8;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
-.positiveSub { color: #f87171; font-size: 0.85rem; }
-.negativeSub { color: #34d399; font-size: 0.85rem; }
+.fixtureTicker {
+  display: flex;
+  gap: 4px;
+}
+
+.fixChip {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 32px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.noFix {
+  font-size: 0.6rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.positiveSub { color: #f87171; font-size: 0.85rem; font-weight: 600; }
+.negativeSub { color: #34d399; font-size: 0.85rem; font-weight: 600; }
 
 .gain { color: #22c55e; }
 .loss { color: #ef4444; }

@@ -5,6 +5,8 @@ import {
   ComposedChart,
   Line, 
   Bar,
+  Cell,
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -16,17 +18,28 @@ import styles from './HistoryChart.module.css';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const diff = data.points - data.avg_score;
+    const diffColor = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
+    
     return (
       <div className={styles.tooltip}>
         <p className={styles.tooltipLabel}>GW {label}</p>
-        <div className={styles.tooltipItem} style={{ color: '#22c55e' }}>
-          <span>Total Points:</span> <span>{payload[1].value}</span>
+        <div className={styles.tooltipItem}>
+          <span style={{ color: '#e2e8f0' }}>GW Points:</span> 
+          <span style={{ fontWeight: 800 }}>{data.points}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ fontSize: '0.7rem', opacity: 0.8 }}>
+          <span>FPL Average:</span> <span>{data.avg_score}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ color: diffColor, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', marginTop: '4px' }}>
+          <span>Vs Average:</span> <span>{diff > 0 ? '+' : ''}{diff}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '8px' }}>
+          <span>Total Points:</span> <span>{data.total_points}</span>
         </div>
         <div className={styles.tooltipItem} style={{ color: '#38bdf8' }}>
-          <span>Overall Rank:</span> <span>{payload[2].value.toLocaleString()}</span>
-        </div>
-        <div className={styles.tooltipItem} style={{ color: '#94a3b8' }}>
-          <span>GW Points:</span> <span>{payload[0].value}</span>
+          <span>Overall Rank:</span> <span>{data.overall_rank.toLocaleString()}</span>
         </div>
       </div>
     );
@@ -44,7 +57,15 @@ export default function HistoryChart() {
       fetch('/api/v1/user/history').then(res => res.json()),
       fetch('/api/v1/user/summary').then(res => res.json())
     ]).then(([hData, sData]) => {
-      if (hData?.current) setHistory(hData.current);
+      if (hData?.current) {
+        // Enchant data with average range for shading
+        const enriched = hData.current.map((h: any) => ({
+          ...h,
+          avg_low: Math.max(0, h.avg_score - 5),
+          avg_high: h.avg_score + 5
+        }));
+        setHistory(enriched);
+      }
       setSummary(sData);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -52,6 +73,15 @@ export default function HistoryChart() {
 
   if (loading) return <div className={styles.container} style={{ textAlign: 'center', opacity: 0.5 }}>Loading Trajectory...</div>;
   if (!history.length || !summary) return null;
+
+  const getBarColor = (points: number, avg: number) => {
+    const diff = points - avg;
+    if (diff > 20) return '#22c55e'; // Excellent
+    if (diff > 5) return '#4ade80';  // Good
+    if (diff < -15) return '#ef4444'; // Poor
+    if (diff < -5) return '#f87171';  // Below Average
+    return '#94a3b8'; // Average
+  };
 
   const current = history[history.length - 1];
   const bestRank = Math.min(...history.map(h => h.overall_rank));
@@ -92,10 +122,10 @@ export default function HistoryChart() {
           <div className={styles.statBadge}>
             <span className={styles.statLabel}>Chips Avail.</span>
             <div className={styles.chipsRow}>
-              {summary.available_chips.map((c: string) => (
+              {(summary.available_chips || []).map((c: string) => (
                 <span key={c} className={styles.chipTag}>{chipLabels[c] || c}</span>
               ))}
-              {summary.available_chips.length === 0 && <span className={styles.noChips}>None</span>}
+              {(!summary.available_chips || summary.available_chips.length === 0) && <span className={styles.noChips}>None</span>}
             </div>
           </div>
         </div>
@@ -113,15 +143,15 @@ export default function HistoryChart() {
               tickLine={false}
             />
             
-            {/* Left Axis: Points */}
+            {/* Left Axis: GW Points */}
             <YAxis 
               yAxisId="points" 
-              stroke="#22c55e" 
+              stroke="#e2e8f0" 
               tick={{fill: '#64748b', fontSize: 10}}
               orientation="left"
               axisLine={false}
               tickLine={false}
-              domain={['dataMin - 50', 'dataMax + 50']}
+              domain={[0, 'dataMax + 20']}
             />
             
             {/* Right Axis: Log Rank */}
@@ -139,27 +169,52 @@ export default function HistoryChart() {
             />
             
             <Tooltip content={<CustomTooltip />} />
+            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }} />
+
+            {/* Shaded Average Range */}
+            <Area
+              yAxisId="points"
+              type="monotone"
+              dataKey="avg_high"
+              aria-label="Average High"
+              stroke="transparent"
+              fill="rgba(148, 163, 184, 0.1)"
+              name="Avg Range"
+            />
+            <Area
+              yAxisId="points"
+              type="monotone"
+              dataKey="avg_low"
+              aria-label="Average Low"
+              stroke="transparent"
+              fill="transparent"
+            />
             
-            {/* GW Points Bar (Background) */}
+            {/* Average Line */}
+            <Line 
+              yAxisId="points"
+              type="monotone" 
+              dataKey="avg_score" 
+              name="FPL Average" 
+              stroke="#94a3b8" 
+              strokeWidth={1}
+              strokeDasharray="5 5"
+              dot={false}
+              activeDot={false}
+            />
+
+            {/* GW Points Bar */}
             <Bar
               yAxisId="points"
               dataKey="points"
-              fill="rgba(56, 189, 248, 0.05)"
+              name="My GW Points"
+              radius={[4, 4, 0, 0]}
               barSize={20}
-              name="GW Points"
-            />
-
-            {/* Total Points Line */}
-            <Line 
-              yAxisId="points"
-              type="stepAfter" 
-              dataKey="total_points" 
-              name="Total Points" 
-              stroke="#22c55e" 
-              strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
+            >
+              {history.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getBarColor(entry.points, entry.avg_score)} />
+              ))}
+            </Bar>
 
             {/* Overall Rank Line */}
             <Line 

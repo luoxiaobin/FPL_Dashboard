@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import styles from './TransferAnalyser.module.css';
 
+interface Fixture {
+  gw: number;
+  opponent: string;
+  difficulty: number;
+  home: boolean;
+}
+
 interface Transfer {
   id: string;
   gw: number;
@@ -16,7 +23,32 @@ interface Transfer {
   pointsImpact: number;
   chip: string | null;
   hitCost: number;
+  fixturesIn: Fixture[];
+  fixturesOut: Fixture[];
 }
+
+const difficultyColor = (d: number) => {
+  if (d <= 2) return '#22c55e';  // green
+  if (d === 3) return '#eab308'; // yellow
+  if (d === 4) return '#f97316'; // orange
+  return '#ef4444';              // red
+};
+
+const FixtureTicker = ({ fixtures }: { fixtures: Fixture[] }) => (
+  <div className={styles.fixtureTicker}>
+    {fixtures.map((f, i) => (
+      <div 
+        key={i} 
+        className={styles.fixChip} 
+        style={{ background: difficultyColor(f.difficulty) }}
+        title={`GW${f.gw}: ${f.opponent} (${f.home ? 'H' : 'A'})`}
+      >
+        {f.opponent}
+      </div>
+    ))}
+    {fixtures.length === 0 && <span className={styles.noFix}>No upcoming games</span>}
+  </div>
+);
 
 type SortKey = 'gw' | 'pointsImpact' | 'netSpend' | 'value';
 
@@ -84,7 +116,7 @@ export default function TransferAnalyser() {
               <th>Player Out</th>
               <th onClick={() => handleSort('value')} className={styles.sortable}>Value {sortKey === 'value' && (sortDir === 'asc' ? '▴' : '▾')}</th>
               <th onClick={() => handleSort('netSpend')} className={styles.sortable}>Net Spend {sortKey === 'netSpend' && (sortDir === 'asc' ? '▴' : '▾')}</th>
-              <th>Stats</th>
+              <th>Actioned</th>
             </tr>
           </thead>
           <tbody>
@@ -98,12 +130,18 @@ export default function TransferAnalyser() {
                     {t.chip && <span className={styles.chipBadge}>{t.chip}</span>}
                   </td>
                   <td className={styles.playerIn}>
-                    <span className={styles.arrowIn}>↓</span> {t.playerIn}
-                    <span className={styles.price}>£{t.costIn}m</span>
+                    <div className={styles.playerInfo}>
+                      <span className={styles.playerName}><span className={styles.arrowIn}>↓</span> {t.playerIn}</span>
+                      <span className={styles.price}>£{t.costIn}m</span>
+                    </div>
+                    <FixtureTicker fixtures={t.fixturesIn} />
                   </td>
                   <td className={styles.playerOut}>
-                    <span className={styles.arrowOut}>↑</span> {t.playerOut}
-                    <span className={styles.price}>£{t.costOut}m</span>
+                    <div className={styles.playerInfo}>
+                      <span className={styles.playerName}><span className={styles.arrowOut}>↑</span> {t.playerOut}</span>
+                      <span className={styles.price}>£{t.costOut}m</span>
+                    </div>
+                    <FixtureTicker fixtures={t.fixturesOut} />
                   </td>
                   <td className={trueValue > 0 ? styles.gain : trueValue < 0 ? styles.loss : ''}>
                     <div className={styles.pointsGrid}>

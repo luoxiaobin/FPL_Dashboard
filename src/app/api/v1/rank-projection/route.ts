@@ -51,22 +51,52 @@ export async function GET(req: NextRequest) {
     const entryData = entryRes.ok ? await entryRes.json() : {};
     const currentOverallRank = entryData.summary_overall_rank || 0;
 
-    // Rank projection: estimate percentile shift
-    // If your score > average => moving up (rank improves), if < average => moving down
-    const scoreDelta = liveTotal - gwAverage;
-    // Rough heuristic: each point above/below average shifts rank by ~0.7% of total players
-    const rankDelta = Math.round(scoreDelta * totalPlayers * 0.007 * -1);
-    const projectedRank = Math.max(1, currentOverallRank + rankDelta);
+    const isFinal = currentGW.finished && currentGW.data_checked;
+
+    // Fetch user's history for accurate movement comparison
+    const historyRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    const historyData = await historyRes.json();
+    const lastGW = historyData.current.find((h: any) => h.event === currentGW.id - 1);
+    const prevRank = lastGW?.overall_rank || currentOverallRank;
+
+    let projectedRank = currentOverallRank;
+    let rankDelta = currentOverallRank - prevRank;
+
+    if (!isFinal) {
+      // Advanced Rank Projection (Conservative Sigmoid Heuristic)
+      let ranksPerPoint = 40000;
+      if (currentOverallRank < 10000) ranksPerPoint = 100;
+      else if (currentOverallRank < 100000) ranksPerPoint = 1200;
+      else if (currentOverallRank < 400000) ranksPerPoint = 5000;
+      else if (currentOverallRank < 2000000) ranksPerPoint = 20000;
+
+      const scoreDelta = liveTotal - gwAverage;
+      const conservativeDelta = scoreDelta * 0.8;
+      const calcDelta = Math.round(conservativeDelta * ranksPerPoint * -1);
+      projectedRank = Math.max(1, currentOverallRank + calcDelta);
+      rankDelta = projectedRank - currentOverallRank;
+    }
+
+    // 5. Tier Tracking
+    const tiers = [1, 100, 1000, 10000, 50000, 100000, 250000, 500000, 1000000, 2000000, 5000000];
+    const displayRank = isFinal ? currentOverallRank : projectedRank;
+    const nextTier = tiers.find(t => t < displayRank) || 1;
+    const ranksPerPoint = currentOverallRank < 100000 ? 1200 : 5000; 
+    const pointsToNextTier = Math.ceil(Math.abs(displayRank - nextTier) / ranksPerPoint);
 
     return NextResponse.json({
-      status: 'live',
+      status: isFinal ? 'final' : 'live',
       gameweek: currentGW.id,
       liveScore: liveTotal,
       gwAverage,
-      scoreDelta,
-      currentRank: currentOverallRank,
-      projectedRank,
+      scoreDelta: liveTotal - gwAverage,
+      currentRank: isFinal ? prevRank : currentOverallRank,
+      projectedRank: isFinal ? currentOverallRank : projectedRank,
       rankDelta,
+      pointsToNextTier,
+      nextTier,
       totalPlayers,
     });
 

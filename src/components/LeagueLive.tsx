@@ -19,6 +19,7 @@ interface LeagueRival {
 interface LeagueData {
   league_name: string;
   standings: LeagueRival[];
+  total_entries: number;
 }
 
 export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onBack: () => void }) {
@@ -82,7 +83,12 @@ export default function LeagueLive({ leagueId, onBack }: { leagueId: number; onB
             {data.standings.map((rival) => (
               <tr key={rival.entry} className={styles.row}>
                 <td className={styles.rankCell}>
-                  <div className={styles.rank}>{rival.live_rank}</div>
+                  <div className={styles.rank}>
+                    {rival.live_rank}
+                    <span className={styles.percentBadge}>
+                      (Top {((rival.live_rank / (data.total_entries || 1)) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
                   <div className={styles.oldRank}>was {rival.rank}</div>
                 </td>
                 <td className={styles.playerCell}>
