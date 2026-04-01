@@ -8,12 +8,16 @@ interface Fixture {
   opponent: string;
   difficulty: number;
   home: boolean;
+  isDGW?: boolean;
 }
 
 interface PlayerFixtures {
   id: number;
   name: string;
+  photo: string;
+  teamCode: number;
   club: string;
+  clubForm: string;
   teamShort: string;
   teamForm: string;
   role: string;
@@ -66,13 +70,54 @@ export default function FixtureTicker() {
     return '#94a3b8';               // neutral
   };
 
+  const renderClubForm = (form: string) => (
+    <div className={styles.formDots}>
+      {form.split('').map((result, i) => (
+        <span key={i} className={`${styles.formDot} ${styles[result.toLowerCase()]}`} title={result} />
+      ))}
+    </div>
+  );
+
   const renderPlayerRow = (player: PlayerFixtures) => (
     <tr key={player.id} className={styles.row}>
       <td className={styles.playerCell}>
-        <span className={styles.playerName}>{player.name}</span>
-        <div className={styles.playerMeta}>
-          <span className={styles.roleTag}>{player.role}</span>
-          <span className={styles.clubBadge}>{player.club}</span>
+        <div className={styles.playerMainInfo}>
+          <div className={styles.avatarMini} style={{ borderColor: player.teamCode === 43 ? '#38bdf8' : player.teamCode === 1 ? '#ef4444' : 'rgba(255, 255, 255, 0.1)' }}>
+            <img 
+              src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+              alt={player.name}
+              className={styles.avatarImg}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (img.src.includes('data:image/')) return;
+                img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+              }}
+            />
+          </div>
+          <div className={styles.playerText}>
+            <span className={styles.playerName}>{player.name || 'Unknown'}</span>
+            <div className={styles.playerMeta}>
+              <span className={styles.roleTag}>{player.role}</span>
+              <div className={styles.clubBadgeRow}>
+                {player.teamCode && (
+                  <img 
+                    src={`https://resources.premierleague.com/premierleague/badges/50/t${player.teamCode}.png`} 
+                    alt={player.club}
+                    className={styles.clubBadgeImg}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      if (img.src.includes('data:image/')) return;
+                      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                    }}
+                  />
+                )}
+                <div className={styles.clubInfoCol}>
+                  <span className={styles.clubBadgeText}>{player.club || 'UNK'}</span>
+                  {player.clubForm && renderClubForm(player.clubForm)}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </td>
       <td className={styles.centerCell}>
@@ -112,6 +157,7 @@ export default function FixtureTicker() {
               >
                 {fix.opponent}
                 <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
+                {fix.isDGW && <span className={styles.dgwIndicator}>x2</span>}
               </div>
             ) : (
               <div className={styles.blankChip}>—</div>

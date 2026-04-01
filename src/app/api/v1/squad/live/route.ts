@@ -58,10 +58,34 @@ export async function GET(req: NextRequest) {
     
     // Map teams to fixture finish status
     const teamFinishedMap = new Map<number, boolean>();
-    fixturesData.forEach((f: any) => {
-      teamFinishedMap.set(f.team_h, f.finished || f.finished_provisional);
-      teamFinishedMap.set(f.team_a, f.finished || f.finished_provisional);
+    const finishedFixtures = fixturesData.filter((f: any) => f.finished || f.finished_provisional);
+    finishedFixtures.forEach((f: any) => {
+      teamFinishedMap.set(f.team_h, true);
+      teamFinishedMap.set(f.team_a, true);
     });
+
+    // Calculate Club Form (Last 5 Results)
+    const clubFormMap = new Map<number, string>();
+    const teams = bootstrap.teams;
+    teams.forEach((t: any) => {
+      const teamFix = finishedFixtures
+        .filter((f: any) => f.team_h === t.id || f.team_a === t.id)
+        .sort((a: any, b: any) => b.event - a.event) // Most recent first
+        .slice(0, 5);
+
+      const form = teamFix.map((f: any) => {
+        const isHome = f.team_h === t.id;
+        const teamScore = isHome ? f.team_h_score : f.team_a_score;
+        const oppScore = isHome ? f.team_a_score : f.team_h_score;
+        if (teamScore > oppScore) return 'W';
+        if (teamScore < oppScore) return 'L';
+        return 'D';
+      }).reverse().join(''); // Store as historical order L -> W
+      
+      clubFormMap.set(t.id, form);
+    });
+
+    const teamCodeMap = new Map(bootstrap.teams.map((t: any) => [t.id, t.code]));
 
     // 3. Combine Data
     const players = picksData.picks.map((pick: any) => {
@@ -84,7 +108,10 @@ export async function GET(req: NextRequest) {
         status: playerStatic.status || 'a',
         price: (playerStatic.now_cost || 0) / 10,
         is_finished: teamFinishedMap.get(playerStatic.team) ?? false,
-        was_started: pick.position <= 11
+        was_started: pick.position <= 11,
+        photo: playerStatic.code ? String(playerStatic.code) : playerStatic.photo?.replace('.jpg', ''),
+        teamCode: teamCodeMap.get(playerStatic.team),
+        clubForm: clubFormMap.get(playerStatic.team) || ''
       };
     });
 
@@ -108,8 +135,22 @@ export async function GET(req: NextRequest) {
       return acc + (p.live_points * (p.multiplier || 1));
     }, 0) + subPoints;
 
+    // 5. Determine Point Lifecycle Status
+    let status: 'live' | 'provisional' | 'official' = 'live';
+    const eventStatus = bootstrap.events.find((e: any) => e.id === gameweek);
+    
+    if (eventStatus?.finished && eventStatus?.data_checked) {
+      status = 'official';
+    } else {
+      const allMatchesFinished = fixturesData.length > 0 && fixturesData.every((f: any) => f.finished || f.finished_provisional);
+      if (allMatchesFinished) {
+        status = 'provisional';
+      }
+    }
+
     return NextResponse.json({
       gameweek,
+      status,
       players,
       projected_points: projectedPoints
     });

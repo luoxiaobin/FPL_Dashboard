@@ -13,9 +13,14 @@ export async function GET(req: NextRequest) {
     ]);
 
     const bootstrap = await bootstrapRes.json();
-    const currentGW = bootstrap.events.find((e: any) => e.is_current)?.id || 1;
+    const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
+    const currentGW = currentGWData.id;
     
-    // Refetch picks for actual current GW
+    // Logic: If current GW is finished, target the next one for suggestions
+    const targetGW = (currentGWData.finished && currentGW < 38) ? currentGW + 1 : currentGW;
+    
+    // Refetch picks for the GW we are looking at (if it's already active/finished)
+    // For future GWs, use current squad picks as proxy
     const actualPicksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
@@ -25,13 +30,23 @@ export async function GET(req: NextRequest) {
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, t]));
     const userSquadIds = new Set(picksData.picks.map((p: any) => p.element));
     
-    // Map team fixtures - Find the NEXT available game for every team
+    // Map DGW/BGW Status for ALL teams for the targetGW
+    const teamFixturesInTargetGW = new Map<number, any[]>();
+    fixtures.forEach((f: any) => {
+      if (f.event === targetGW) {
+        if (!teamFixturesInTargetGW.has(f.team_h)) teamFixturesInTargetGW.set(f.team_h, []);
+        if (!teamFixturesInTargetGW.has(f.team_a)) teamFixturesInTargetGW.set(f.team_a, []);
+        teamFixturesInTargetGW.get(f.team_h)?.push({ opponent: f.team_a, difficulty: f.team_h_difficulty, home: true });
+        teamFixturesInTargetGW.get(f.team_a)?.push({ opponent: f.team_h, difficulty: f.team_a_difficulty, home: false });
+      }
+    });
+
+    // Determine the NEXT fixture for each team (for scoring)
     const teamNextFixture = new Map<number, any>();
-    // Sort fixtures by event to always pick the earliest one
     const sortedFixtures = [...fixtures].sort((a, b) => a.event - b.event);
     
     for (const f of sortedFixtures) {
-      if (f.finished) continue;
+      if (f.finished || f.event < targetGW) continue;
       
       if (!teamNextFixture.has(f.team_h)) {
         teamNextFixture.set(f.team_h, { opponent: f.team_a, difficulty: f.team_h_difficulty, home: true, gw: f.event });
@@ -60,23 +75,67 @@ export async function GET(req: NextRequest) {
       return score;
     };
 
+    // Calculate Club Form (Last 5 Results)
+    const finishedFixtures = fixtures.filter((f: any) => f.finished || f.finished_provisional);
+    const clubFormMap = new Map<number, string>();
+    bootstrap.teams.forEach((t: any) => {
+      const teamFix = finishedFixtures
+        .filter((f: any) => f.team_h === t.id || f.team_a === t.id)
+        .sort((a: any, b: any) => b.event - a.event)
+        .slice(0, 5);
+
+      const form = teamFix.map((f: any) => {
+        const isHome = f.team_h === t.id;
+        const teamScore = isHome ? f.team_h_score : f.team_a_score;
+        const oppScore = isHome ? f.team_a_score : f.team_h_score;
+        if (teamScore > oppScore) return 'W';
+        if (teamScore < oppScore) return 'L';
+        return 'D';
+      }).reverse().join('');
+      
+      clubFormMap.set(t.id, form);
+    });
+
     const allPlayers = bootstrap.elements.map((p: any) => {
       const score = calculateScore(p);
       const fix = teamNextFixture.get(p.team);
       const teamInfo = teamMap.get(p.team) as any;
       const oppInfo = teamMap.get(fix?.opponent) as any;
       
+      let targetFixtures: any[] = [];
+      let multiFixtures: any[] = [];
+      
+      try {
+        targetFixtures = teamFixturesInTargetGW.get(p.team) || [];
+        multiFixtures = targetFixtures.map(tf => {
+          const oppTeam = teamMap.get(tf.opponent) as any;
+          return {
+            opponent: oppTeam?.short_name || 'UNK',
+            difficulty: tf.difficulty || 3,
+            home: tf.home ?? true
+          };
+        });
+      } catch (e) {
+        console.error(`Error mapping fixtures for player ${p.web_name}:`, e);
+      }
+
       return {
         id: p.id,
-        name: p.web_name,
-        team: teamInfo?.short_name,
-        ict: (parseFloat(p.ict_index) / 10).toFixed(1), 
-        form: p.form,
+        name: p.web_name || 'Unknown',
+        team: teamInfo?.short_name || 'UNK',
+        ict: (parseFloat(p.ict_index || 0) / 10).toFixed(1), 
+        form: p.form || '0.0',
         fdr: fix?.difficulty || 3,
         opponent: oppInfo?.short_name || 'UNK',
         isHome: fix?.home ?? true,
-        score,
-        inSquad: userSquadIds.has(p.id)
+        score: score || 0,
+        inSquad: userSquadIds.has(p.id),
+        photo: p.code ? String(p.code) : p.photo?.replace('.jpg', ''),
+        teamCode: teamInfo?.code,
+        clubForm: clubFormMap.get(p.team) || '',
+        isDGW: targetFixtures.length > 1,
+        isBGW: targetFixtures.length === 0,
+        fixtures: multiFixtures
       };
     });
 
@@ -107,6 +166,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       activeGW: currentGW,
+      targetGW,
       suggestions: formattedSuggestions,
       transferTarget: {
         ...transferCandidate,

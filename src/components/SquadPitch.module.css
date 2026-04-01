@@ -52,28 +52,62 @@
 .playerCard {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 0 0 8px 0; /* Bottom padding only, image fills top */
   text-align: center;
-  min-width: 90px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s;
+  min-width: 100px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  overflow: hidden;
+  position: relative;
 }
 
 .playerCard:hover {
-  transform: scale(1.05);
+  transform: translateY(-4px) scale(1.02);
   border-color: #38bdf8;
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.2);
+}
+
+.playerImageContainer {
+  width: 100%;
+  height: 80px; /* Reverted height */
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.playerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  filter: grayscale(1) brightness(1.05);
+  transition: all 0.3s ease;
+}
+
+.playerCard:hover .playerImage {
+  filter: grayscale(0.2) brightness(1);
+  transform: scale(1.05);
+}
+
+.playerCard:hover .playerImage {
+  transform: scale(1.1);
 }
 
 .playerName {
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #f8fafc;
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 4px;
-  white-space: nowrap;
+  padding: 0 4px;
 }
 
 .playerPoints {

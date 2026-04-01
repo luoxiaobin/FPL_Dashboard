@@ -94,7 +94,9 @@ export default function DashboardShell() {
           )}
         </div>
         <div className={styles.statCard} style={{ border: '1px solid rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.05)' }}>
-          <div className={styles.statLabel} style={{ color: '#22c55e' }}>Live Projected</div>
+          <div className={styles.statLabel} style={{ color: '#22c55e' }}>
+            {liveSquad?.gameweek ? `GW${liveSquad.gameweek} Live Score` : 'Live Score'}
+          </div>
           <div className={styles.statValue} style={{ color: '#22c55e' }}>
             {liveSquad?.projected_points ?? '-'}
           </div>

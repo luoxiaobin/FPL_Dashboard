@@ -83,6 +83,44 @@
 }
 
 .playerCell {
+  padding: 10px 12px !important;
+}
+
+.playerMainInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatarMini {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  filter: grayscale(1) brightness(1.05);
+  transition: filter 0.2s;
+}
+
+.row:hover .avatarImg {
+  filter: grayscale(0.4) brightness(1);
+}
+
+.playerText {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -90,8 +128,8 @@
 
 .playerName {
   font-size: 0.85rem;
-  color: #e2e8f0;
-  font-weight: 500;
+  color: #f8fafc;
+  font-weight: 700;
 }
 
 .playerMeta {
@@ -107,14 +145,50 @@
   text-transform: uppercase;
 }
 
-.clubBadge {
-  font-size: 0.65rem;
-  color: #e2e8f0;
-  font-weight: 600;
+.clubBadgeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 0px 6px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
 }
+
+.clubBadgeImg {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.clubInfoCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clubBadgeText {
+  font-size: 0.72rem;
+  color: #f8fafc;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.formDots {
+  display: flex;
+  gap: 2px;
+}
+
+.formDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.formDot.w { background: #22c55e; }
+.formDot.d { background: #94a3b8; }
+.formDot.l { background: #ef4444; }
 
 .formBadge {
   font-size: 0.75rem;
@@ -124,6 +198,27 @@
   border-radius: 6px;
   display: inline-block;
   border: 1px solid transparent;
+}
+
+.activeGW {
+  background: rgba(34, 197, 94, 0.4);
+  color: #fff;
+  font-weight: 800;
+  border-radius: 4px;
+}
+
+.dgwIndicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #22c55e;
+  color: #000;
+  font-size: 0.55rem;
+  font-weight: 900;
+  padding: 1px 3px;
+  border-radius: 3px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .statusIcon {

@@ -121,29 +121,69 @@
   color: #e2e8f0;
 }
 
-.playerInfo {
+.playerRowInfo {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.avatarMini {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;
   align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.playerText {
+  display: flex;
+  flex-direction: column;
 }
 
 .playerName {
   font-size: 0.9rem;
   font-weight: 700;
+  color: #f8fafc;
 }
 
 .arrowIn { color: #22c55e; margin-right: 2px; font-weight: 900; }
 .arrowOut { color: #ef4444; margin-right: 2px; font-weight: 900; }
 
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.miniClubBadge {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
 .price {
-  font-size: 0.7rem;
-  opacity: 0.8;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  color: #f8fafc;
   background: rgba(255, 255, 255, 0.05);
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
 }
 
 .fixtureTicker {

@@ -47,6 +47,16 @@ export default function SquadPitch() {
 
   const projectedTotal = activeTotal + subTotal;
 
+  const status = data.status || 'live';
+
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'official': return 'OFFICIAL POINTS';
+      case 'provisional': return 'PROVISIONAL SCORE';
+      default: return 'LIVE PROJECTED POINTS';
+    }
+  };
+
   const getPlayersByPos = (playersList: any[], pos: string) => playersList.filter(p => p.position === pos);
 
   const renderPlayer = (p: any, type: 'pitch' | 'bench') => {
@@ -57,7 +67,20 @@ export default function SquadPitch() {
       <div 
         key={p.id} 
         className={`${styles.playerCard} ${isMissing ? styles.dimmed : ''} ${isIncoming ? styles.highlight : ''}`}
+        style={{ borderColor: p.team_code === 43 ? '#38bdf8' : p.team_code === 1 ? '#ef4444' : 'rgba(255, 255, 255, 0.1)' }}
       >
+        <div className={styles.playerImageContainer}>
+          <img 
+            src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+            alt={p.name}
+            className={styles.playerImage}
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (img.src.includes('data:image/')) return;
+              img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+            }}
+          />
+        </div>
         <div className={styles.playerName}>
           {p.name}
           {p.is_captain && <span className={styles.captainTag}>C</span>}
@@ -77,13 +100,14 @@ export default function SquadPitch() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.projectionHeader}>
-        <div className={styles.projectionLabel}>Live Projected Points</div>
+      <div className={`${styles.projectionHeader} ${styles[status]}`}>
+        <div className={styles.projectionLabel}>{getStatusLabel()}</div>
         <div className={styles.projectionValue}>
-          {projectedTotal} <span className={styles.projectionSub}>(Inc. Auto-Subs)</span>
+          {projectedTotal} <span className={styles.projectionSub}>
+            {status === 'official' ? '(Final)' : '(Inc. Auto-Subs)'}
+          </span>
         </div>
       </div>
-
       <div className={styles.pitch}>
         <div className={styles.row}>
           {getPlayersByPos(starters, 'FWD').map(p => renderPlayer(p, 'pitch'))}

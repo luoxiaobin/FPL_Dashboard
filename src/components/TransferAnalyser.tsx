@@ -16,6 +16,10 @@ interface Transfer {
   time: string;
   playerIn: string;
   playerOut: string;
+  photoIn: string;
+  photoOut: string;
+  teamCodeIn: number;
+  teamCodeOut: number;
   costIn: number;
   costOut: number;
   pointsIn: number;
@@ -130,16 +134,62 @@ export default function TransferAnalyser() {
                     {t.chip && <span className={styles.chipBadge}>{t.chip}</span>}
                   </td>
                   <td className={styles.playerIn}>
-                    <div className={styles.playerInfo}>
-                      <span className={styles.playerName}><span className={styles.arrowIn}>↓</span> {t.playerIn}</span>
-                      <span className={styles.price}>£{t.costIn}m</span>
+                    <div className={styles.playerRowInfo}>
+                      <div className={styles.avatarMini}>
+                        <img 
+                          src={`https://resources.premierleague.com/premierleague/photos/players/40x40/p${t.photoIn?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+                          alt={t.playerIn}
+                          className={styles.avatarImg}
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement;
+                            if (img.src.includes('data:image/')) return;
+                            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                          }}
+                        />
+                      </div>
+                      <div className={styles.playerText}>
+                        <span className={styles.playerName}><span className={styles.arrowIn}>↓</span> {t.playerIn}</span>
+                        <div className={styles.priceRow}>
+                          <span className={styles.price}>£{t.costIn}m</span>
+                          {t.teamCodeIn && (
+                            <img 
+                              src={`https://resources.premierleague.com/premierleague/badges/50/t${t.teamCodeIn}.png`} 
+                              alt="Club Badge"
+                              className={styles.miniClubBadge}
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <FixtureTicker fixtures={t.fixturesIn} />
                   </td>
                   <td className={styles.playerOut}>
-                    <div className={styles.playerInfo}>
-                      <span className={styles.playerName}><span className={styles.arrowOut}>↑</span> {t.playerOut}</span>
-                      <span className={styles.price}>£{t.costOut}m</span>
+                    <div className={styles.playerRowInfo}>
+                      <div className={styles.avatarMini}>
+                        <img 
+                          src={`https://resources.premierleague.com/premierleague/photos/players/40x40/p${t.photoOut?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+                          alt={t.playerOut}
+                          className={styles.avatarImg}
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement;
+                            if (img.src.includes('data:image/')) return;
+                            img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                          }}
+                        />
+                      </div>
+                      <div className={styles.playerText}>
+                        <span className={styles.playerName}><span className={styles.arrowOut}>↑</span> {t.playerOut}</span>
+                        <div className={styles.priceRow}>
+                          <span className={styles.price}>£{t.costOut}m</span>
+                          {t.teamCodeOut && (
+                            <img 
+                              src={`https://resources.premierleague.com/premierleague/badges/50/t${t.teamCodeOut}.png`} 
+                              alt="Club Badge"
+                              className={styles.miniClubBadge}
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <FixtureTicker fixtures={t.fixturesOut} />
                   </td>

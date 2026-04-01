@@ -16,8 +16,21 @@ export default function LivePoints() {
 
   return (
     <div className={styles.container}>
-      {squad.players.slice(0, 11).map((player: any) => (
+      <div className={`${styles.statusBanner} ${styles[squad.status]}`}>
+        {squad.status === 'official' ? 'OFFICIAL GW STATUS' : squad.status === 'provisional' ? 'PROVISIONAL (MATCHES DONE)' : 'LIVE GW DATA'}
+      </div>
+      {squad.players.slice(0, 11).sort((a:any, b:any) => b.live_points - a.live_points).map((player: any) => (
         <div key={player.id} className={styles.playerRow}>
+          <div className={styles.playerImageMini}>
+            <img 
+              src={`https://resources.premierleague.com/premierleague/photos/players/40x40/p${player.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+              alt={player.name}
+              className={styles.pImg}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://resources.premierleague.com/premierleague/photos/players/40x40/p250123.png';
+              }}
+            />
+          </div>
           <div className={styles.playerInfo}>
             <div className={styles.playerName}>
               {player.name}
