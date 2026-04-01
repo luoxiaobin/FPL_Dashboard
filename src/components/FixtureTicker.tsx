@@ -62,6 +62,13 @@ export default function FixtureTicker() {
 
   const startingXI = data.players.filter(p => p.position <= 11);
   const bench = data.players.filter(p => p.position > 11);
+  const hasDoubleGameweek = data.players.some(player =>
+    data.nextGWs.some(gw => player.fixtures.filter(f => f.gw === gw).length > 1)
+  );
+  const hasBlankGameweek = data.players.some(player =>
+    data.nextGWs.some(gw => !player.fixtures.some(f => f.gw === gw))
+  );
+  const showNoSpecialWeeksIndicator = !hasDoubleGameweek && !hasBlankGameweek;
 
   const getFormColor = (form: string) => {
     const f = parseFloat(form);
@@ -85,7 +92,7 @@ export default function FixtureTicker() {
         <div className={styles.playerMainInfo}>
           <div className={styles.avatarMini}>
             <img 
-              src={getPlayerPhotoUrl(player.photo, '110x140', player.id)}
+              src={getPlayerPhotoUrl(player.photo, '110x140', player.id, player.teamCode)}
               alt={player.name}
               className={styles.avatarImg}
               onError={(e) => {
@@ -147,18 +154,23 @@ export default function FixtureTicker() {
         )}
       </td>
       {data.nextGWs.map(gw => {
-        const fix = player.fixtures.find(f => f.gw === gw);
+        const fixturesForGw = player.fixtures.filter(f => f.gw === gw);
         return (
           <td key={gw} className={styles.fixCell}>
-            {fix ? (
-              <div
-                className={styles.fixChip}
-                style={{ background: difficultyColor(fix.difficulty) }}
-                title={`GW${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
-              >
-                {fix.opponent}
-                <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
-                {fix.isDGW && <span className={styles.dgwIndicator}>x2</span>}
+            {fixturesForGw.length > 0 ? (
+              <div className={styles.fixStack}>
+                {fixturesForGw.map((fix, index) => (
+                  <div
+                    key={`${gw}-${fix.opponent}-${index}`}
+                    className={styles.fixChip}
+                    style={{ background: difficultyColor(fix.difficulty) }}
+                    title={`GW${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
+                  >
+                    {fix.opponent}
+                    <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
+                    {index === 0 && fixturesForGw.length > 1 && <span className={styles.dgwIndicator}>x2</span>}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className={styles.blankChip}>—</div>
@@ -173,10 +185,15 @@ export default function FixtureTicker() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>Squad Fixture Ticker</h2>
-        <div className={styles.gwLabels}>
-          {data.nextGWs.map(gw => (
-            <span key={gw} className={styles.gwLabel}>GW{gw}</span>
-          ))}
+        <div className={styles.headerMeta}>
+          {showNoSpecialWeeksIndicator && (
+            <span className={styles.windowIndicator}>No DGW/BGW in next 5 GWs</span>
+          )}
+          <div className={styles.gwLabels}>
+            {data.nextGWs.map(gw => (
+              <span key={gw} className={styles.gwLabel}>GW{gw}</span>
+            ))}
+          </div>
         </div>
       </div>
 

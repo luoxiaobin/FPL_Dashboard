@@ -24,6 +24,18 @@ const getTransparentImageResponse = () =>
     },
   });
 
+const getClubShirtUrl = (teamCode: number, size: '40x40' | '110x140') => {
+  const shirtSize = size === '40x40' ? '66' : '110';
+  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-${shirtSize}.webp`;
+};
+
+const getShirtFallbackResponse = (teamCode?: number | null, size: '40x40' | '110x140' = '110x140') => {
+  if (typeof teamCode === 'number' && Number.isFinite(teamCode) && teamCode > 0) {
+    return NextResponse.redirect(getClubShirtUrl(teamCode, size), 307);
+  }
+  return getTransparentImageResponse();
+};
+
 const isAllowedSize = (size: string) => size === '40x40' || size === '110x140';
 
 const parseIsStale = (lastModifiedHeader: string | null) => {
@@ -46,21 +58,25 @@ const getBootstrap = async () => {
   return bootstrapCache;
 };
 
-const hasRecentTransfer = async (playerId: number) => {
+const getPlayerImageMeta = async (playerId: number) => {
   const bootstrap = await getBootstrap();
-  if (!bootstrap?.elements) return false;
+  if (!bootstrap?.elements) return { recentTransfer: false, teamCode: null as number | null };
   const player = bootstrap.elements.find((el: any) => el.id === playerId);
-  if (!player?.team_join_date) return false;
+  if (!player) return { recentTransfer: false, teamCode: null as number | null };
+  const teamCode = typeof player.team_code === 'number' ? player.team_code : null;
+  if (!player.team_join_date) return { recentTransfer: false, teamCode };
   const joinedAt = Date.parse(player.team_join_date);
-  if (Number.isNaN(joinedAt)) return false;
-  return joinedAt >= STALE_CUTOFF_MS;
+  if (Number.isNaN(joinedAt)) return { recentTransfer: false, teamCode };
+  return { recentTransfer: joinedAt >= STALE_CUTOFF_MS, teamCode };
 };
 
 export async function GET(req: NextRequest) {
   const photo = req.nextUrl.searchParams.get('photo')?.trim();
   const sizeParam = req.nextUrl.searchParams.get('size')?.trim() || '110x140';
   const playerIdParam = req.nextUrl.searchParams.get('playerId')?.trim();
+  const teamCodeParam = req.nextUrl.searchParams.get('teamCode')?.trim();
   const playerId = playerIdParam ? Number(playerIdParam) : Number.NaN;
+  const teamCode = teamCodeParam ? Number(teamCodeParam) : Number.NaN;
 
   if (!photo) return getTransparentImageResponse();
   if (!isAllowedSize(sizeParam)) return getTransparentImageResponse();
@@ -72,8 +88,13 @@ export async function GET(req: NextRequest) {
   const cached = staleCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     if (cached.stale && Number.isFinite(playerId)) {
-      const transferred = await hasRecentTransfer(playerId);
-      if (transferred) return getTransparentImageResponse();
+      const meta = await getPlayerImageMeta(playerId);
+      if (meta.recentTransfer) {
+        return getShirtFallbackResponse(
+          meta.teamCode ?? (Number.isFinite(teamCode) ? teamCode : null),
+          sizeParam as '40x40' | '110x140',
+        );
+      }
     }
     const upstream = `https://resources.premierleague.com/premierleague/photos/players/${sizeParam}/p${normalizedPhoto}.png?v=${PLAYER_IMAGE_VERSION}`;
     return NextResponse.redirect(upstream, 307);
@@ -97,8 +118,13 @@ export async function GET(req: NextRequest) {
     staleCache.set(cacheKey, { stale, expiresAt: now + CACHE_TTL_MS });
 
     if (stale && Number.isFinite(playerId)) {
-      const transferred = await hasRecentTransfer(playerId);
-      if (transferred) return getTransparentImageResponse();
+      const meta = await getPlayerImageMeta(playerId);
+      if (meta.recentTransfer) {
+        return getShirtFallbackResponse(
+          meta.teamCode ?? (Number.isFinite(teamCode) ? teamCode : null),
+          sizeParam as '40x40' | '110x140',
+        );
+      }
     }
     return NextResponse.redirect(upstream, 307);
   } catch {

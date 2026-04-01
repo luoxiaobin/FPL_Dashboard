@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.4.2",
+    "date": "2026-03-31",
+    "title": "Consistency Pass, DGW UX, and Promotion Docs",
+    "changes": [
+      "Standardized player visuals to current-season club shirts for a more consistent dashboard presentation",
+      "Completed double gameweek rendering in the fixture ticker and added a 'no DGW/BGW in next 5 GWs' indicator",
+      "Updated dashboard summary cards to show official/provisional/live GW score lifecycle and team value",
+      "Refreshed README and added product, architecture, and promotion-copy documentation",
+      "Applied additional UI cleanup for fixture and avatar presentation"
+    ]
+  },
+  {
     "version": "0.4.1",
     "date": "2026-03-31",
     "title": "Player Image Freshness & Visual Cleanup",

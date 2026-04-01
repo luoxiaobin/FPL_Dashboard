@@ -56,7 +56,7 @@ export default function CaptaincyAdviser() {
       <div className={styles.playerSection}>
         <div className={styles.imageContainer}>
           <img 
-            src={getPlayerPhotoUrl(p.photo, '110x140', p.id)}
+            src={getPlayerPhotoUrl(p.photo, '110x140', p.id, p.teamCode)}
             alt={p.name}
             className={styles.playerImage}
             onError={(e) => {

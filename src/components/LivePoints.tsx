@@ -24,7 +24,7 @@ export default function LivePoints() {
         <div key={player.id} className={styles.playerRow}>
           <div className={styles.playerImageMini}>
             <img 
-              src={getPlayerPhotoUrl(player.photo, '40x40', player.id)}
+              src={getPlayerPhotoUrl(player.photo, '40x40', player.id, player.teamCode)}
               alt={player.name}
               className={styles.pImg}
               onError={(e) => {

@@ -21,6 +21,19 @@ export default function DashboardShell() {
   const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
   const router = useRouter();
 
+  const getScoreLabel = () => {
+    if (!liveSquad?.gameweek) return 'Score';
+
+    switch (liveSquad.status) {
+      case 'official':
+        return `GW${liveSquad.gameweek} Official Score`;
+      case 'provisional':
+        return `GW${liveSquad.gameweek} Provisional Score`;
+      default:
+        return `GW${liveSquad.gameweek} Live Score`;
+    }
+  };
+
   useEffect(() => {
     // Fetch Summary
     fetch('/api/v1/user/summary')
@@ -95,7 +108,7 @@ export default function DashboardShell() {
         </div>
         <div className={styles.statCard} style={{ border: '1px solid rgba(34, 197, 94, 0.3)', background: 'rgba(34, 197, 94, 0.05)' }}>
           <div className={styles.statLabel} style={{ color: '#22c55e' }}>
-            {liveSquad?.gameweek ? `GW${liveSquad.gameweek} Live Score` : 'Live Score'}
+            {getScoreLabel()}
           </div>
           <div className={styles.statValue} style={{ color: '#22c55e' }}>
             {liveSquad?.projected_points ?? '-'}
@@ -105,6 +118,9 @@ export default function DashboardShell() {
           <div className={styles.statLabel}>Bank Balance</div>
           <div className={styles.statValue}>
             £{summary?.bank_balance.toFixed(1) ?? '-'}m
+          </div>
+          <div className={styles.statBadge}>
+            Team Value: £{summary?.total_value?.toFixed(1) ?? '-'}m
           </div>
         </div>
         <div className={styles.statCard}>

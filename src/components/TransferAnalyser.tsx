@@ -138,7 +138,7 @@ export default function TransferAnalyser() {
                     <div className={styles.playerRowInfo}>
                       <div className={styles.avatarMini}>
                         <img 
-                          src={getPlayerPhotoUrl(t.photoIn, '40x40')}
+                          src={getPlayerPhotoUrl(t.photoIn, '40x40', undefined, t.teamCodeIn)}
                           alt={t.playerIn}
                           className={styles.avatarImg}
                           onError={(e) => {
@@ -168,7 +168,7 @@ export default function TransferAnalyser() {
                     <div className={styles.playerRowInfo}>
                       <div className={styles.avatarMini}>
                         <img 
-                          src={getPlayerPhotoUrl(t.photoOut, '40x40')}
+                          src={getPlayerPhotoUrl(t.photoOut, '40x40', undefined, t.teamCodeOut)}
                           alt={t.playerOut}
                           className={styles.avatarImg}
                           onError={(e) => {
