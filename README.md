@@ -4,6 +4,10 @@ An all-in-one Fantasy Premier League dashboard for managers who want live clarit
 
 Built with Next.js, React, TypeScript, and Supabase, the app combines live score tracking, rank movement, fixture intelligence, captaincy suggestions, transfer review, and league context in a single dark-mode dashboard.
 
+## Live production URL
+
+https://fpl-dashboard-seven-pi.vercel.app/
+
 ## Why it exists
 
 The official FPL experience is powerful, but fragmented:
@@ -100,6 +104,10 @@ npm run dev
 ```
 
 Open the app at `http://localhost:3000`.
+
+Production deployment:
+
+https://fpl-dashboard-seven-pi.vercel.app/
 
 ## Validation commands
 

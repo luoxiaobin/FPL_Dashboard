@@ -13,6 +13,83 @@
   animation: fadeInDown 0.6s ease-out;
 }
 
+.branding {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.logoFull {
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+}
+
+.logoIcon {
+  display: none;
+  width: 54px;
+  height: 54px;
+}
+
+.teamName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #93c5fd;
+  letter-spacing: 0.02em;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settingsBtn,
+.signOutBtn {
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.settingsBtn {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+  font-size: 1rem;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.settingsBtn:hover {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.signOutBtn {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.signOutBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.emptyState {
+  composes: glass-panel from global;
+  margin-top: 24px;
+  color: #94a3b8;
+  text-align: center;
+}
+
 .title {
   font-size: 2.5rem;
   font-weight: 800;
@@ -65,6 +142,29 @@
 @media (max-width: 1024px) {
   .mainGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .headerActions {
+    align-self: flex-end;
+  }
+
+  .logoFull {
+    display: none;
+  }
+
+  .logoIcon {
+    display: block;
+  }
+
+  .teamName {
+    font-size: 0.9rem;
   }
 }
 

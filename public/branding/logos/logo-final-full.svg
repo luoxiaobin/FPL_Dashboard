@@ -1,0 +1,49 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="panel" x1="32" y1="20" x2="340" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091633"/>
+      <stop offset="1" stop-color="#112A52"/>
+    </linearGradient>
+    <linearGradient id="shieldOuter" x1="88" y1="48" x2="272" y2="302" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E3A8A"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="shieldInner" x1="108" y1="68" x2="252" y2="282" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1E45"/>
+      <stop offset="1" stop-color="#132D57"/>
+    </linearGradient>
+    <linearGradient id="rise" x1="118" y1="238" x2="254" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="0.5" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#4ADE80"/>
+    </linearGradient>
+    <linearGradient id="bars" x1="146" y1="258" x2="232" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7DD3FC"/>
+      <stop offset="1" stop-color="#4ADE80"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="400" y1="70" x2="1080" y2="280" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#93C5FD"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="328" height="328" rx="84" fill="url(#panel)"/>
+
+  <path d="M180 52L276 88V172C276 236 233 292 180 317C127 292 84 236 84 172V88L180 52Z" fill="url(#shieldOuter)"/>
+  <path d="M180 74L256 102V172C256 226 221 272 180 294C139 272 104 226 104 172V102L180 74Z" fill="url(#shieldInner)"/>
+
+  <path d="M124 132L180 102L236 132" stroke="#7DD3FC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+  <rect x="140" y="204" width="16" height="52" rx="5" fill="url(#bars)"/>
+  <rect x="170" y="184" width="16" height="72" rx="5" fill="url(#bars)"/>
+  <rect x="200" y="162" width="16" height="94" rx="5" fill="url(#bars)"/>
+
+  <path d="M118 230L158 190L190 214L240 138" stroke="url(#rise)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M230 136L254 132L246 156" stroke="#4ADE80" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="390" y="165" fill="url(#wordmark)" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="0.5">FPL</text>
+  <text x="390" y="250" fill="#E2E8F0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="72" font-weight="700" letter-spacing="0.2">Dashboard</text>
+
+  <circle cx="1088" cy="70" r="8" fill="#22C55E"/>
+  <path d="M1068 95H1108" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -12,8 +12,31 @@ CREATE TABLE IF NOT EXISTS public.users (
 );
 
 -- 2. Create Enums for Players
-CREATE TYPE player_position AS ENUM ('GKP', 'DEF', 'MID', 'FWD');
-CREATE TYPE player_status AS ENUM ('Available', 'Injured', 'Suspended', 'Unavailable');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'player_position' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.player_position AS ENUM ('GKP', 'DEF', 'MID', 'FWD');
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'player_status' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.player_status AS ENUM ('Available', 'Injured', 'Suspended', 'Unavailable');
+  END IF;
+END
+$$;
 
 -- 3. Create Player table (Stores the global list of Premier League players)
 CREATE TABLE IF NOT EXISTS public.players (
@@ -58,6 +81,18 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.squads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.squad_players ENABLE ROW LEVEL SECURITY;
 
+-- 7. Create User Preferences table (dashboard section visibility)
+CREATE TABLE IF NOT EXISTS public.user_preferences (
+  user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  visible_sections JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+
 -- Allow anonymous reads to public data, but authenticate users later
+DROP POLICY IF EXISTS "Allow public read access" ON public.players;
 CREATE POLICY "Allow public read access" ON public.players FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public read access" ON public.gameweeks;
 CREATE POLICY "Allow public read access" ON public.gameweeks FOR SELECT USING (true);

@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "FPL Dashboard | Live Points & Roster",
   description: "High-performance, centralized interface for managing Fantasy Premier League data.",
+  icons: {
+    icon: "/branding/logos/logo-final-icon.svg",
+    shortcut: "/branding/logos/logo-final-icon.svg",
+    apple: "/branding/logos/logo-final-icon.svg",
+  },
 };
 
 export default function RootLayout({

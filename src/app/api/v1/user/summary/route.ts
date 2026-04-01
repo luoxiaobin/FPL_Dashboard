@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       user_id: data.id,
+      manager_name: `${data.player_first_name || ''} ${data.player_last_name || ''}`.trim(),
       team_name: data.name,
       overall_rank: data.summary_overall_rank || 0,
       total_points: data.summary_overall_points || 0,

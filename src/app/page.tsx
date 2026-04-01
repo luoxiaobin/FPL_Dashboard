@@ -14,11 +14,13 @@ import FixtureTicker from '../components/FixtureTicker';
 import TransferAnalyser from '../components/TransferAnalyser';
 import LeagueLive from '../components/LeagueLive';
 import CaptaincyAdviser from '../components/CaptaincyAdviser';
+import { DEFAULT_SECTION_PREFERENCES, SectionPreferences } from '@/lib/sectionPreferences';
 
 export default function DashboardShell() {
   const [summary, setSummary] = useState<any>(null);
   const [liveSquad, setLiveSquad] = useState<any>(null);
   const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
+  const [sections, setSections] = useState<SectionPreferences>(DEFAULT_SECTION_PREFERENCES);
   const router = useRouter();
 
   const getScoreLabel = () => {
@@ -54,6 +56,13 @@ export default function DashboardShell() {
       .then(data => {
         if (data && !data.error) setLiveSquad(data);
       });
+
+    // Fetch User Section Preferences
+    fetch('/api/v1/user/preferences')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.preferences) setSections(data.preferences);
+      });
   }, [router]);
 
   const handleLogout = async () => {
@@ -65,33 +74,38 @@ export default function DashboardShell() {
     <div className={styles.container}>
       <SyncStatus />
       <header className={styles.header}>
-        <h1 className={styles.title}>
-          {summary ? summary.team_name : 'Loading Team...'}
-        </h1>
-        <button 
-          onClick={handleLogout}
-          className="glass-panel" 
-          style={{ 
-            padding: '10px 20px', 
-            borderRadius: '30px',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            color: '#ef4444',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-            e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.4)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-            e.currentTarget.style.border = '1px solid rgba(239, 68, 68, 0.2)';
-          }}
-        >
-          Sign Out
-        </button>
+        <div className={styles.branding}>
+          <img
+            src="/branding/logos/logo-final-full.svg"
+            alt="FPL Dashboard"
+            className={styles.logoFull}
+          />
+          <img
+            src="/branding/logos/logo-final-icon.svg"
+            alt="FPL Dashboard"
+            className={styles.logoIcon}
+          />
+          <div className={styles.teamName}>
+            {summary
+              ? `FPL Manager: ${summary.manager_name || summary.team_name}`
+              : 'FPL Manager: Loading...'}
+          </div>
+        </div>
+        <div className={styles.headerActions}>
+          <button
+            onClick={() => router.push('/settings')}
+            className={styles.settingsBtn}
+            title="Dashboard Settings"
+          >
+            ⚙
+          </button>
+          <button
+            onClick={handleLogout}
+            className={styles.signOutBtn}
+          >
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <div className={styles.statsGrid}>
@@ -131,40 +145,54 @@ export default function DashboardShell() {
         </div>
       </div>
 
-      <CaptaincyAdviser />
-      <RankProjection />
-      <HistoryChart />
-      <GameweekHistory />
-      <FixtureTicker />
-      <TransferAnalyser />
+      {sections.captaincyAdviser && <CaptaincyAdviser />}
+      {sections.rankProjection && <RankProjection />}
+      {sections.historyChart && <HistoryChart />}
+      {sections.gameweekHistory && <GameweekHistory />}
+      {sections.fixtureTicker && <FixtureTicker />}
+      {sections.transferAnalyser && <TransferAnalyser />}
 
       <div className={styles.mainGrid}>
-        <div className={styles.panel}>
-          <h2 className={styles.panelTitle}>Live Squad Pitch</h2>
-          <SquadPitch />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+        {sections.squadPitch && (
           <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>Live Points</h2>
-            <LivePoints />
+            <h2 className={styles.panelTitle}>Live Squad Pitch</h2>
+            <SquadPitch />
           </div>
+        )}
 
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>
-              {viewingLeagueId ? 'Live Standings' : 'League Standings'}
-            </h2>
-            {viewingLeagueId ? (
-              <LeagueLive 
-                leagueId={viewingLeagueId} 
-                onBack={() => setViewingLeagueId(null)} 
-              />
-            ) : (
-              <LeagueStandings onViewLive={(id) => setViewingLeagueId(id)} />
+        {(sections.livePoints || sections.leagueStandings) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            {sections.livePoints && (
+              <div className={styles.panel}>
+                <h2 className={styles.panelTitle}>Live Points</h2>
+                <LivePoints />
+              </div>
+            )}
+
+            {sections.leagueStandings && (
+              <div className={styles.panel}>
+                <h2 className={styles.panelTitle}>
+                  {viewingLeagueId ? 'Live Standings' : 'League Standings'}
+                </h2>
+                {viewingLeagueId ? (
+                  <LeagueLive
+                    leagueId={viewingLeagueId}
+                    onBack={() => setViewingLeagueId(null)}
+                  />
+                ) : (
+                  <LeagueStandings onViewLive={(id) => setViewingLeagueId(id)} />
+                )}
+              </div>
             )}
           </div>
-        </div>
+        )}
       </div>
+
+      {!sections.squadPitch && !sections.livePoints && !sections.leagueStandings && (
+        <div className={styles.emptyState}>
+          All lower dashboard sections are hidden. Open Settings to re-enable modules.
+        </div>
+      )}
     </div>
   );
 }
