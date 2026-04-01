@@ -86,12 +86,10 @@
   height: 100%;
   object-fit: cover;
   object-position: top;
-  filter: grayscale(1) brightness(1.05);
   transition: all 0.3s ease;
 }
 
 .playerCard:hover .playerImage {
-  filter: grayscale(0.2) brightness(1);
   transform: scale(1.05);
 }
 

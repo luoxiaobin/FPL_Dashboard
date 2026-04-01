@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './LivePoints.module.css';
+import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
 
 export default function LivePoints() {
   const [squad, setSquad] = useState<any>(null);
@@ -23,11 +24,11 @@ export default function LivePoints() {
         <div key={player.id} className={styles.playerRow}>
           <div className={styles.playerImageMini}>
             <img 
-              src={`https://resources.premierleague.com/premierleague/photos/players/40x40/p${player.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+              src={getPlayerPhotoUrl(player.photo, '40x40', player.id)}
               alt={player.name}
               className={styles.pImg}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://resources.premierleague.com/premierleague/photos/players/40x40/p250123.png';
+                (e.target as HTMLImageElement).src = TRANSPARENT_IMAGE_DATA_URI;
               }}
             />
           </div>

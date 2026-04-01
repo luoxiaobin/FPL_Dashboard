@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './FixtureTicker.module.css';
+import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
 
 interface Fixture {
   gw: number;
@@ -82,15 +83,15 @@ export default function FixtureTicker() {
     <tr key={player.id} className={styles.row}>
       <td className={styles.playerCell}>
         <div className={styles.playerMainInfo}>
-          <div className={styles.avatarMini} style={{ borderColor: player.teamCode === 43 ? '#38bdf8' : player.teamCode === 1 ? '#ef4444' : 'rgba(255, 255, 255, 0.1)' }}>
+          <div className={styles.avatarMini}>
             <img 
-              src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+              src={getPlayerPhotoUrl(player.photo, '110x140', player.id)}
               alt={player.name}
               className={styles.avatarImg}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
                 if (img.src.includes('data:image/')) return;
-                img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                img.src = TRANSPARENT_IMAGE_DATA_URI;
               }}
             />
           </div>

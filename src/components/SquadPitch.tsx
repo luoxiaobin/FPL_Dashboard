@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './SquadPitch.module.css';
+import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
 
 export default function SquadPitch() {
   const [data, setData] = useState<any>(null);
@@ -67,17 +68,16 @@ export default function SquadPitch() {
       <div 
         key={p.id} 
         className={`${styles.playerCard} ${isMissing ? styles.dimmed : ''} ${isIncoming ? styles.highlight : ''}`}
-        style={{ borderColor: p.team_code === 43 ? '#38bdf8' : p.team_code === 1 ? '#ef4444' : 'rgba(255, 255, 255, 0.1)' }}
       >
         <div className={styles.playerImageContainer}>
           <img 
-            src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+            src={getPlayerPhotoUrl(p.photo, '110x140', p.id)}
             alt={p.name}
             className={styles.playerImage}
             onError={(e) => {
               const img = e.target as HTMLImageElement;
               if (img.src.includes('data:image/')) return;
-              img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+              img.src = TRANSPARENT_IMAGE_DATA_URI;
             }}
           />
         </div>

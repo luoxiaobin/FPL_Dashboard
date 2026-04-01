@@ -101,12 +101,6 @@
   height: 100%;
   object-fit: cover;
   object-position: top;
-  filter: grayscale(1) brightness(1.1) contrast(1.1);
-  transition: filter 0.3s ease;
-}
-
-.playerCard:hover .playerImage {
-  filter: grayscale(0.5) brightness(1) contrast(1);
 }
 
 .playerMain {

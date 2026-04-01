@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './CaptaincyAdviser.module.css';
+import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
 
 interface Suggestion {
   id: number;
@@ -53,15 +54,15 @@ export default function CaptaincyAdviser() {
       </div>
       
       <div className={styles.playerSection}>
-        <div className={styles.imageContainer} style={{ borderColor: p.teamCode === 43 ? '#38bdf8' : p.teamCode === 1 ? '#ef4444' : 'rgba(255,255,255,0.1)' }}>
+        <div className={styles.imageContainer}>
           <img 
-            src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${p.photo?.replace('.jpg', '').replace('.png', '') || '250123'}.png`} 
+            src={getPlayerPhotoUrl(p.photo, '110x140', p.id)}
             alt={p.name}
             className={styles.playerImage}
             onError={(e) => {
               const img = e.target as HTMLImageElement;
               if (img.src.includes('data:image/')) return;
-              img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+              img.src = TRANSPARENT_IMAGE_DATA_URI;
             }}
           />
         </div>

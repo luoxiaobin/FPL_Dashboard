@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.4.1",
+    "date": "2026-03-31",
+    "title": "Player Image Freshness & Visual Cleanup",
+    "changes": [
+      "Added transfer-aware stale image filtering via /api/v1/player-photo",
+      "Use team_join_date intelligence: hide stale photos only for recently transferred players",
+      "Centralized player image URL routing through shared helper",
+      "Removed club-colored avatar border accents for a cleaner neutral presentation",
+      "Retained cache-busting and graceful transparent fallback for missing/broken images"
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "2026-03-30",
     "title": "Phase 3 Completion: Advanced Analytics",
