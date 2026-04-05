@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const PLAYER_IMAGE_VERSION = '2026-03';
 const STALE_CUTOFF_MS = Date.parse('2025-07-01T00:00:00.000Z');
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const BOOTSTRAP_TTL_MS = 60 * 60 * 1000;
+const BOOTSTRAP_TTL_MS = 15 * 60 * 1000; // 15 mins
 
 const TRANSPARENT_GIF = Buffer.from(
   'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',

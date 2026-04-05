@@ -5,7 +5,7 @@ let lastFetchTime = 0;
 
 async function getBootstrap() {
   const now = Date.now();
-  if (bootstrapCache && (now - lastFetchTime) < 3600000) { // 1 hour cache
+  if (bootstrapCache && (now - lastFetchTime) < 900000) { // 15 minute cache
     return bootstrapCache;
   }
   const res = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');

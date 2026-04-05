@@ -42,6 +42,7 @@ This dashboard is designed to bring those decisions into one view.
 
 ### Decision support
 - captaincy adviser for the target gameweek
+- transfer optimizer (AI-driven expected gains analysis and tracked evaluation)
 - DGW/BGW-aware suggestions
 - market target suggestion
 - transfer analyser with hit cost and points impact
@@ -83,11 +84,18 @@ This is best suited to:
 - [src/app/api/v1/user/summary/route.ts](src/app/api/v1/user/summary/route.ts)
 - [src/app/api/v1/squad/live/route.ts](src/app/api/v1/squad/live/route.ts)
 - [src/app/api/v1/fixtures/route.ts](src/app/api/v1/fixtures/route.ts)
+- [src/app/api/v1/squad/optimize/route.ts](src/app/api/v1/squad/optimize/route.ts)
 - [src/app/api/v1/squad/suggestions/route.ts](src/app/api/v1/squad/suggestions/route.ts)
 - [src/app/api/v1/user/transfers/route.ts](src/app/api/v1/user/transfers/route.ts)
 - [src/app/api/v1/leagues/route.ts](src/app/api/v1/leagues/route.ts)
 - [src/app/api/v1/rank-projection/route.ts](src/app/api/v1/rank-projection/route.ts)
 - [src/app/api/v1/sync/route.ts](src/app/api/v1/sync/route.ts)
+- [src/app/api/v1/cron/evaluate/route.ts](src/app/api/v1/cron/evaluate/route.ts)
+
+## Security & Architecture
+
+- **Rate Limiting:** Next.js Edge Middleware (`src/middleware.ts`) enforces per-IP throttling at 30 requests per minute across all public proxy endpoints.
+- **Fast Caching:** Critical application endpoints strictly revalidate generic FPL assets sequentially on short TTL pulses, guaranteeing high performance under heavy dashboard viewing load.
 
 ## Local development
 

@@ -58,6 +58,9 @@ The Next.js API layer is used as a proxy and transformation boundary.
 - [src/app/api/v1/squad/suggestions/route.ts](src/app/api/v1/squad/suggestions/route.ts)
 - [src/app/api/v1/squad/optimize/route.ts](src/app/api/v1/squad/optimize/route.ts)
 
+### Background Operations & Cron
+- [src/app/api/v1/cron/evaluate/route.ts](src/app/api/v1/cron/evaluate/route.ts) — handles retroactive recommendation outcome grading.
+
 ### Fixture and rank intelligence
 - [src/app/api/v1/fixtures/route.ts](src/app/api/v1/fixtures/route.ts)
 - [src/app/api/v1/rank-projection/route.ts](src/app/api/v1/rank-projection/route.ts)
@@ -140,6 +143,7 @@ Player visuals have been standardized around current-season club shirt assets fo
 
 ## Architectural strengths
 
+- Edge-based `middleware.ts` defends public proxy routes natively using LRU limitation.
 - clear separation between UI modules and FPL proxy logic
 - extensible route-based API structure
 - strong surface for adding more analytics modules

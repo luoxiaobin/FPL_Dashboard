@@ -14,6 +14,7 @@ import FixtureTicker from '../components/FixtureTicker';
 import TransferAnalyser from '../components/TransferAnalyser';
 import LeagueLive from '../components/LeagueLive';
 import CaptaincyAdviser from '../components/CaptaincyAdviser';
+import TransferOptimizer from '../components/TransferOptimizer';
 import { DEFAULT_SECTION_PREFERENCES, SectionPreferences } from '@/lib/sectionPreferences';
 
 export default function DashboardShell() {
@@ -146,6 +147,7 @@ export default function DashboardShell() {
       </div>
 
       {sections.captaincyAdviser && <CaptaincyAdviser />}
+      <TransferOptimizer />
       {sections.rankProjection && <RankProjection />}
       {sections.historyChart && <HistoryChart />}
       {sections.gameweekHistory && <GameweekHistory />}

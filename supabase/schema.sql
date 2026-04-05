@@ -96,3 +96,32 @@ CREATE POLICY "Allow public read access" ON public.players FOR SELECT USING (tru
 
 DROP POLICY IF EXISTS "Allow public read access" ON public.gameweeks;
 CREATE POLICY "Allow public read access" ON public.gameweeks FOR SELECT USING (true);
+
+-- 8. Create Enum for Recommendation Outcome
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'recommendation_outcome' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.recommendation_outcome AS ENUM ('Pending', 'Hit', 'Neutral', 'Miss');
+  END IF;
+END
+$$;
+
+-- 9. Create Recommendation Logs table
+CREATE TABLE IF NOT EXISTS public.recommendation_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  gameweek_id INT NOT NULL,
+  out_player_id BIGINT NOT NULL,
+  in_player_id BIGINT NOT NULL,
+  expected_gain DECIMAL(4,1) NOT NULL,
+  rationale TEXT,
+  outcome recommendation_outcome NOT NULL DEFAULT 'Pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+ALTER TABLE public.recommendation_logs ENABLE ROW LEVEL SECURITY;
