@@ -133,3 +133,28 @@
   font-weight: 600;
   margin-bottom: 4px;
 }
+
+.tooltipHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.tooltipHeader .tooltipLabel {
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.chipMarkerBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}

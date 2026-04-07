@@ -8,6 +8,16 @@ Built with Next.js, React, TypeScript, and Supabase, the app combines live score
 
 https://fpl-dashboard-seven-pi.vercel.app/
 
+### Key Features
+
+* **Public Team ID Authentication:** Securely built on top of the Public FPL Protocol. Simply enter your official numeric FPL Team ID to immediately load your entire dashboard—no email, passwords, or cookies required.
+* **Season Trajectory 2.0 (Recharts):** Advanced dual-axis visualization with Logarithmic Rank scaling, Team Value trends, Average Points benchmarks, and tactical Chip markers (WC, BB, TC, FH).
+* **Mini-League Battleground:** Real-time Rival Gaps Analysis to identify ownership differentials and point deficits against league competitors.
+* **Intelligent Fixture Ticker:** Squad-wide fixture difficulty mapping including player metadata (Club, Form, Position, Injury Status) and heat-mapped intensity.
+* **Live Squad Pitch:** A visual 15-man roster pitch that maps out your active starting XI alongside their live match minutes, BPS, and points.
+* **Bonus Point System (BPS) Radar:** Our intelligent API parser flags high-performing players with golden `[X bps]` indicators or confirmed `[+X B]` markers dynamically across your pitch array during live matches.
+* **Digital Transfer Analyser:** Deep-dive into historical transfer impact, tracking points-hit costs vs. performance gains.
+
 ## Why it exists
 
 The official FPL experience is powerful, but fragmented:

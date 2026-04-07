@@ -8,29 +8,31 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [historyRes, staticRes] = await Promise.all([
+    const [historyRes, bootstrapRes] = await Promise.all([
       fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
       fetch(`https://fantasy.premierleague.com/api/bootstrap-static/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
-    if (!historyRes.ok || !staticRes.ok) {
+    if (!historyRes.ok || !bootstrapRes.ok) {
       return NextResponse.json({ error: 'FPL API Error' }, { status: 502 });
     }
 
     const historyData = await historyRes.json();
-    const staticData = await staticRes.json();
+    const bootstrapData = await bootstrapRes.json();
 
-    // Map global averages to user's history events
-    const avgs = new Map(staticData.events.map((e: any) => [e.id, e.average_entry_score]));
-    
-    if (historyData.current) {
-      historyData.current = historyData.current.map((gw: any) => ({
-        ...gw,
-        avg_score: avgs.get(gw.event) || 0
-      }));
-    }
+    const gwAverages = new Map(bootstrapData.events.map((e: any) => [e.id, e.average_entry_score]));
 
-    return NextResponse.json(historyData);
+    // Merge average scores into current history
+    const currentWithAverages = (historyData.current || []).map((h: any) => ({
+      ...h,
+      avg_points: gwAverages.get(h.event) || 0,
+      avg_score: gwAverages.get(h.event) || 0 // Keep both for compatibility
+    }));
+
+    return NextResponse.json({
+      ...historyData,
+      current: currentWithAverages
+    });
 
   } catch (error) {
     console.error('History API Proxy Error:', error);

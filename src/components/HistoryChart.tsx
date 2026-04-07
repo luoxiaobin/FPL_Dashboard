@@ -6,40 +6,47 @@ import {
   Line, 
   Bar,
   Cell,
-  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Legend
+  Legend,
+  ReferenceDot
 } from 'recharts';
 import styles from './HistoryChart.module.css';
+
+const chipLabels: Record<string, string> = {
+  'bboost': 'BB',
+  '3xc': 'TC',
+  'wildcard': 'WC',
+  'freehit': 'FH'
+};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const diff = data.points - data.avg_score;
-    const diffColor = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#94a3b8';
+    const pointsDiff = data.points - data.avg_points;
     
     return (
       <div className={styles.tooltip}>
-        <p className={styles.tooltipLabel}>GW {label}</p>
-        <div className={styles.tooltipItem}>
-          <span style={{ color: '#e2e8f0' }}>GW Points:</span> 
-          <span style={{ fontWeight: 800 }}>{data.points}</span>
+        <div className={styles.tooltipHeader}>
+          <p className={styles.tooltipLabel}>GW {label}</p>
+          {data.chip_name && (
+            <span className={styles.chipMarkerBadge}>{chipLabels[data.chip_name] || data.chip_name}</span>
+          )}
         </div>
-        <div className={styles.tooltipItem} style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-          <span>FPL Average:</span> <span>{data.avg_score}</span>
-        </div>
-        <div className={styles.tooltipItem} style={{ color: diffColor, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px', marginTop: '4px' }}>
-          <span>Vs Average:</span> <span>{diff > 0 ? '+' : ''}{diff}</span>
-        </div>
-        <div className={styles.tooltipItem} style={{ fontSize: '0.65rem', color: '#94a3b8', marginTop: '8px' }}>
+        <div className={styles.tooltipItem} style={{ color: '#22c55e' }}>
           <span>Total Points:</span> <span>{data.total_points}</span>
         </div>
         <div className={styles.tooltipItem} style={{ color: '#38bdf8' }}>
           <span>Overall Rank:</span> <span>{data.overall_rank.toLocaleString()}</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ color: '#94a3b8' }}>
+          <span>GW Points:</span> <span>{data.points} ({pointsDiff > 0 ? `+${pointsDiff}` : pointsDiff} vs Avg)</span>
+        </div>
+        <div className={styles.tooltipItem} style={{ color: '#eab308' }}>
+          <span>Team Value:</span> <span>£{data.team_value.toFixed(1)}m</span>
         </div>
       </div>
     );
@@ -58,13 +65,17 @@ export default function HistoryChart() {
       fetch('/api/v1/user/summary').then(res => res.json())
     ]).then(([hData, sData]) => {
       if (hData?.current) {
-        // Enchant data with average range for shading
-        const enriched = hData.current.map((h: any) => ({
-          ...h,
-          avg_low: Math.max(0, h.avg_score - 5),
-          avg_high: h.avg_score + 5
-        }));
-        setHistory(enriched);
+        // Merge chips and calculate team value (divide by 10)
+        const enrichedHistory = hData.current.map((h: any) => {
+          const chip = hData.chips?.find((c: any) => c.event === h.event);
+          return {
+            ...h,
+            team_value: (h.value + h.bank) / 10,
+            avg_points: h.avg_points || h.avg_score || 0,
+            chip_name: chip ? chip.name : null
+          };
+        });
+        setHistory(enrichedHistory);
       }
       setSummary(sData);
       setLoading(false);
@@ -85,13 +96,6 @@ export default function HistoryChart() {
 
   const current = history[history.length - 1];
   const bestRank = Math.min(...history.map(h => h.overall_rank));
-
-  const chipLabels: Record<string, string> = {
-    'bboost': 'BB',
-    '3xc': 'TC',
-    'wildcard': 'WC',
-    'freehit': 'FH'
-  };
 
   return (
     <div className={styles.container}>
@@ -133,7 +137,7 @@ export default function HistoryChart() {
 
       <div className={styles.chartContainer}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={history} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <ComposedChart data={history} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.3} />
             <XAxis 
               dataKey="event" 
@@ -143,7 +147,7 @@ export default function HistoryChart() {
               tickLine={false}
             />
             
-            {/* Left Axis: GW Points */}
+            {/* Left Axis: Points & Value */}
             <YAxis 
               yAxisId="points" 
               stroke="#e2e8f0" 
@@ -169,38 +173,25 @@ export default function HistoryChart() {
             />
             
             <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }} />
-
-            {/* Shaded Average Range */}
-            <Area
-              yAxisId="points"
-              type="monotone"
-              dataKey="avg_high"
-              aria-label="Average High"
-              stroke="transparent"
-              fill="rgba(148, 163, 184, 0.1)"
-              name="Avg Range"
-            />
-            <Area
-              yAxisId="points"
-              type="monotone"
-              dataKey="avg_low"
-              aria-label="Average Low"
-              stroke="transparent"
-              fill="transparent"
+            
+            <Legend 
+              verticalAlign="top" 
+              align="right" 
+              height={36} 
+              iconType="circle" 
+              wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}
             />
             
-            {/* Average Line */}
-            <Line 
+            {/* GW Avg Points (Dashed Background) */}
+            <Line
               yAxisId="points"
-              type="monotone" 
-              dataKey="avg_score" 
-              name="FPL Average" 
-              stroke="#94a3b8" 
+              type="monotone"
+              dataKey="avg_points"
+              name="Avg Points"
+              stroke="#475569"
               strokeWidth={1}
-              strokeDasharray="5 5"
+              strokeDasharray="4 4"
               dot={false}
-              activeDot={false}
             />
 
             {/* GW Points Bar */}
@@ -212,7 +203,7 @@ export default function HistoryChart() {
               barSize={20}
             >
               {history.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry.points, entry.avg_score)} />
+                <Cell key={`cell-${index}`} fill={getBarColor(entry.points, entry.avg_points)} />
               ))}
             </Bar>
 
@@ -227,6 +218,39 @@ export default function HistoryChart() {
               dot={false}
               activeDot={{ r: 4 }}
             />
+
+            {/* Team Value Line */}
+            <Line
+              yAxisId="points"
+              type="monotone"
+              dataKey="team_value"
+              name="Team Value (£m)"
+              stroke="#f59e0b"
+              strokeWidth={1.5}
+              dot={false}
+              strokeDasharray="2 2"
+            />
+
+            {/* Chips Markers */}
+            {history.map((entry, index) => entry.chip_name && (
+              <ReferenceDot 
+                key={`chip-${index}`}
+                yAxisId="points"
+                x={entry.event}
+                y={entry.points}
+                r={12}
+                fill="#38bdf8"
+                stroke="#0f172a"
+                strokeWidth={2}
+                label={{ 
+                  value: chipLabels[entry.chip_name] || entry.chip_name, 
+                  position: 'center', 
+                  fill: '#0f172a', 
+                  fontSize: 10, 
+                  fontWeight: 800 
+                }}
+              />
+            ))}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
