@@ -25,7 +25,8 @@ FR-04	Season Trajectory 2.0 with Dual-Axis Log Rank and Chip Markers.	Must (Done
 FR-05	Fixture Ticker with 5-GW heat-mapped intensity and player metadata.	Must (Done)
 FR-06	Mini-League "Rival Gaps Analysis" comparison engine.	Must (Done)
 FR-07	Transfer Analyser tracking historical performance vs. point hits.	Should (Done)
-FR-08	Optimization engine for transfer suggestions based on projected points.	Could
+FR-08	Optimization engine for transfer suggestions based on projected points.	Must (Done)
+FR-09	Automated Transfer Outcome Grading (Hit/Neutral/Miss) via cron job.	Should (Done)
 
 3. Security and Access Controls
 
@@ -83,10 +84,11 @@ The backend service follows a RESTful architecture. Responses are structured as 
 * Endpoint Path: /api/v1/leagues
 * Description: Returns status of all joined leagues.
 * Expected Response: {"leagues": [{"league_id": 555, "name": "Global", "rank": 500, "movement": "up"}]}
-* Method: POST
-* Endpoint Path: /api/v1/squad/optimize
-* Description: Computes transfer recommendations.
 * Expected Response: {"suggestions": [{"out_id": 202, "in_id": 303, "expected_gain": 4.5}]}
+* Method: GET
+* Endpoint Path: /api/v1/cron/evaluate
+* Description: Retroactive grading of previous transfer recommendations.
+* Expected Response: {"status": "success", "evaluations": [{"player_id": 303, "result": "Hit"}]}
 
 6. Low-Cost Deployment & Infrastructure Plan
 

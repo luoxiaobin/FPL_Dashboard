@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.5.0",
+    "date": "2026-04-06",
+    "title": "Next.js 16 Migration & Season Trajectory 2.0",
+    "changes": [
+      "Migrated Middleware to the new Next.js 16 Proxy convention (src/proxy.ts)",
+      "Resolved build failures by fixing deprecated request.ip API usage",
+      "Season Trajectory 2.0: Added Team Value tracking, Chip markers (WC, BB, TC, FH), and FPL Average benchmarks to the history chart",
+      "Merged origin/main branch features into master for unified production readiness",
+      "Added Transfer Optimizer UI and automated Transfer Evaluation cron job",
+      "Updated documentation to reflect new architecture and features"
+    ]
+  },
+  {
     "version": "0.4.2",
     "date": "2026-03-31",
     "title": "Consistency Pass, DGW UX, and Promotion Docs",

@@ -40,6 +40,7 @@ At a high level:
 - [src/components/FixtureTicker.tsx](src/components/FixtureTicker.tsx)
 - [src/components/CaptaincyAdviser.tsx](src/components/CaptaincyAdviser.tsx)
 - [src/components/TransferAnalyser.tsx](src/components/TransferAnalyser.tsx)
+- [src/components/TransferOptimizer.tsx](src/components/TransferOptimizer.tsx)
 - [src/components/SyncStatus.tsx](src/components/SyncStatus.tsx)
 
 ## API layer
@@ -111,13 +112,13 @@ Builds the squad fixture ticker payload:
 - per-player fixtures
 - DGW detection via per-team per-event counts
 
-### Suggestions route
-Builds captaincy and market-target suggestions using:
+### Suggestions & Optimization route
+Builds captaincy and transfer recommendations using:
 - target GW logic
-- expected points style heuristics
-- fixture difficulty
-- DGW/BGW detection
-- club form
+- expected points (xP) heuristics
+- fixture difficulty and club form
+- Transfer Optimizer: automated suggestion engine for bench/market targets
+- automated grading: cron job for retroactive hit/miss evaluation
 
 ## Persistence layer
 
@@ -143,7 +144,7 @@ Player visuals have been standardized around current-season club shirt assets fo
 
 ## Architectural strengths
 
-- Edge-based `middleware.ts` defends public proxy routes natively using LRU limitation.
+- Edge-based `proxy.ts` (formerly `middleware.ts`) defends public proxy routes natively using IP-based rate limiting.
 - clear separation between UI modules and FPL proxy logic
 - extensible route-based API structure
 - strong surface for adding more analytics modules

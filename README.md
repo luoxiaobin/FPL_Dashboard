@@ -104,7 +104,7 @@ This is best suited to:
 
 ## Security & Architecture
 
-- **Rate Limiting:** Next.js Edge Middleware (`src/middleware.ts`) enforces per-IP throttling at 30 requests per minute across all public proxy endpoints.
+- **Rate Limiting:** Next.js Edge Proxy (`src/proxy.ts`) enforces per-IP throttling at 30 requests per minute across all public proxy endpoints.
 - **Fast Caching:** Critical application endpoints strictly revalidate generic FPL assets sequentially on short TTL pulses, guaranteeing high performance under heavy dashboard viewing load.
 
 ## Local development

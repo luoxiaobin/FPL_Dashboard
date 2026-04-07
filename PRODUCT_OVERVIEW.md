@@ -42,6 +42,7 @@ Managers rarely get a clean read on whether transfer decisions were actually ben
 - DGW/BGW support
 - captaincy adviser
 - market target surfacing
+- Transfer Optimizer for bench and market suggestions
 
 ### Decision review
 - transfer analyser with hit-adjusted value context
@@ -74,6 +75,7 @@ Managers rarely get a clean read on whether transfer decisions were actually ben
 - fixture ticker
 - DGW/BGW-aware presentation
 - captaincy adviser
+- Transfer Optimizer (AI Expected Gains)
 
 ### Review and history
 - transfer analyser
