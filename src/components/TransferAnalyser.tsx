@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import styles from './TransferAnalyser.module.css';
-import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
+
+const JERSEY_IMAGE_VERSION = '2026-03';
+
+const getJerseyIconUrl = (teamCode?: number) => {
+  if (!teamCode || !Number.isFinite(teamCode)) return '';
+  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-66.webp?v=${JERSEY_IMAGE_VERSION}`;
+};
 
 interface Fixture {
   gw: number;
@@ -137,16 +143,13 @@ export default function TransferAnalyser() {
                   <td className={styles.playerIn}>
                     <div className={styles.playerRowInfo}>
                       <div className={styles.avatarMini}>
-                        <img 
-                          src={getPlayerPhotoUrl(t.photoIn, '40x40', undefined, t.teamCodeIn)}
-                          alt={t.playerIn}
-                          className={styles.avatarImg}
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement;
-                            if (img.src.includes('data:image/')) return;
-                            img.src = TRANSPARENT_IMAGE_DATA_URI;
-                          }}
-                        />
+                        {t.teamCodeIn ? (
+                          <img
+                            src={getJerseyIconUrl(t.teamCodeIn)}
+                            alt={`${t.playerIn} jersey`}
+                            className={styles.avatarImg}
+                          />
+                        ) : null}
                       </div>
                       <div className={styles.playerText}>
                         <span className={styles.playerName}><span className={styles.arrowIn}>↓</span> {t.playerIn}</span>
@@ -167,16 +170,13 @@ export default function TransferAnalyser() {
                   <td className={styles.playerOut}>
                     <div className={styles.playerRowInfo}>
                       <div className={styles.avatarMini}>
-                        <img 
-                          src={getPlayerPhotoUrl(t.photoOut, '40x40', undefined, t.teamCodeOut)}
-                          alt={t.playerOut}
-                          className={styles.avatarImg}
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement;
-                            if (img.src.includes('data:image/')) return;
-                            img.src = TRANSPARENT_IMAGE_DATA_URI;
-                          }}
-                        />
+                        {t.teamCodeOut ? (
+                          <img
+                            src={getJerseyIconUrl(t.teamCodeOut)}
+                            alt={`${t.playerOut} jersey`}
+                            className={styles.avatarImg}
+                          />
+                        ) : null}
                       </div>
                       <div className={styles.playerText}>
                         <span className={styles.playerName}><span className={styles.arrowOut}>↑</span> {t.playerOut}</span>
