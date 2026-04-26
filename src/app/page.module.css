@@ -133,18 +133,6 @@
   letter-spacing: 0.05em;
 }
 
-.mainGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-}
-
-@media (max-width: 1024px) {
-  .mainGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 640px) {
   .header {
     align-items: flex-start;
