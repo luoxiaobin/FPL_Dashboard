@@ -28,10 +28,10 @@ export async function GET(req: NextRequest) {
     const allChips = ['bboost', '3xc', 'wildcard', 'freehit'];
     
     // Filter used chips to only those used in the CURRENT phase
-    const usedInPhase = new Set(
-      (history.chips || [])
-        .filter((c: any) => c.event >= phaseStart && c.event <= phaseEnd)
-        .map((c: any) => c.name)
+    const usedInPhase = new Set<string>(
+      (history.chips as Array<{ event: number; name: string }> || [])
+        .filter(c => c.event >= phaseStart && c.event <= phaseEnd)
+        .map(c => c.name)
     );
 
     const availableChips = allChips.filter(c => !usedInPhase.has(c));

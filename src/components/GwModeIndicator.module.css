@@ -1,0 +1,29 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: opacity 0.15s ease;
+}
+
+.badge:hover {
+  opacity: 0.85;
+}
+
+.live {
+  background-color: #16a34a;
+  color: #fff;
+}
+
+.planning {
+  background-color: #334155;
+  color: #cbd5e1;
+}

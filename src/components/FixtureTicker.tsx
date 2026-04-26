@@ -44,12 +44,17 @@ const difficultyColor = (d: number) => {
 export default function FixtureTicker() {
   const [data, setData] = useState<TickerData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/fixtures')
       .then(res => res.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => {
+        if (d && !d.error) setData(d);
+        else setError(true);
+        setLoading(false);
+      })
+      .catch(() => { setError(true); setLoading(false); });
   }, []);
 
   if (loading) return (
@@ -58,7 +63,7 @@ export default function FixtureTicker() {
     </div>
   );
 
-  if (!data || !data.players?.length) return null;
+  if (error || !data || !data.players?.length) return null;
 
   const startingXI = data.players.filter(p => p.position <= 11);
   const bench = data.players.filter(p => p.position > 11);
@@ -72,10 +77,11 @@ export default function FixtureTicker() {
 
   const getFormColor = (form: string) => {
     const f = parseFloat(form);
-    if (f >= 5.0) return '#22c55e'; // blazing - green
-    if (f >= 4.0) return '#38bdf8'; // solid - teal/blue
-    if (f < 2.0) return '#f97316';  // cold - orange
-    return '#94a3b8';               // neutral
+    if (isNaN(f)) return '#94a3b8';
+    if (f >= 5.0) return '#22c55e';
+    if (f >= 4.0) return '#38bdf8';
+    if (f < 2.0) return '#f97316';
+    return '#94a3b8';
   };
 
   const renderClubForm = (form: string) => (
@@ -197,6 +203,7 @@ export default function FixtureTicker() {
         </div>
       </div>
 
+      <div data-testid="fixture-scroll-wrapper" className={styles.scrollWrapper}>
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
@@ -219,6 +226,7 @@ export default function FixtureTicker() {
             )}
           </tbody>
         </table>
+      </div>
       </div>
 
       <div className={styles.legend}>

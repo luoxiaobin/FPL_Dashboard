@@ -10,6 +10,10 @@ interface Suggestion {
   out_name: string;
   in_name: string;
   rationale: string;
+  out_team_code?: number | null;
+  in_team_code?: number | null;
+  out_club?: string | null;
+  in_club?: string | null;
 }
 
 export default function TransferOptimizer() {
@@ -18,7 +22,7 @@ export default function TransferOptimizer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/squad/optimize')
+    fetch('/api/v1/squad/optimize', { method: 'POST' })
       .then(res => {
         if (!res.ok) throw new Error('Optimizer route returned an error');
         return res.json();
@@ -65,19 +69,39 @@ export default function TransferOptimizer() {
                 <tr key={idx} className={styles.row}>
                   <td>
                     <div className={styles.playerBlock}>
+                      {s.out_team_code && (
+                        <img
+                          data-badge
+                          src={`https://resources.premierleague.com/premierleague/badges/50/t${s.out_team_code}.png`}
+                          alt={s.out_club ?? ''}
+                          className={styles.clubBadge}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
                       <div className={styles.playerText}>
                         <span className={styles.playerName}>
                           <span className={styles.arrowOut}>↑</span> {s.out_name}
                         </span>
+                        {s.out_club && <span className={styles.clubName}>{s.out_club}</span>}
                       </div>
                     </div>
                   </td>
                   <td>
                     <div className={styles.playerBlock}>
+                      {s.in_team_code && (
+                        <img
+                          data-badge
+                          src={`https://resources.premierleague.com/premierleague/badges/50/t${s.in_team_code}.png`}
+                          alt={s.in_club ?? ''}
+                          className={styles.clubBadge}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
                       <div className={styles.playerText}>
                         <span className={styles.playerName}>
                           <span className={styles.arrowIn}>↓</span> {s.in_name}
                         </span>
+                        {s.in_club && <span className={styles.clubName}>{s.in_club}</span>}
                         <div className={styles.rationale}>{s.rationale}</div>
                       </div>
                     </div>

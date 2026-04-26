@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { DEFAULT_SECTION_PREFERENCES, normalizeSectionPreferences } from '@/lib/sectionPreferences';
+import { extractPanelOrders, buildPanelOrderPayload } from '@/lib/panelOrder';
 
 const getUserIdFromCookie = async (req: NextRequest) => {
   const entryId = req.cookies.get('fpl_entry_id')?.value;
@@ -30,8 +31,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch preferences' }, { status: 500 });
     }
 
-    const preferences = normalizeSectionPreferences(data?.visible_sections ?? DEFAULT_SECTION_PREFERENCES);
-    return NextResponse.json({ preferences });
+    const raw = data?.visible_sections ?? DEFAULT_SECTION_PREFERENCES;
+    const preferences = normalizeSectionPreferences(raw);
+    const { planningOrder, liveOrder } = extractPanelOrders(raw);
+    return NextResponse.json({ preferences, planning_panel_order: planningOrder, live_panel_order: liveOrder });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
@@ -44,16 +47,19 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const preferences = normalizeSectionPreferences(body?.preferences);
+    const planningOrder: string[] = Array.isArray(body?.planning_panel_order) ? body.planning_panel_order : [];
+    const liveOrder: string[] = Array.isArray(body?.live_panel_order) ? body.live_panel_order : [];
+    const visibleSections = buildPanelOrderPayload(preferences, planningOrder, liveOrder);
 
     const { error } = await supabaseAdmin
       .from('user_preferences')
-      .upsert({ user_id: userId, visible_sections: preferences }, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, visible_sections: visibleSections }, { onConflict: 'user_id' });
 
     if (error) {
       return NextResponse.json({ error: 'Failed to save preferences' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, preferences });
+    return NextResponse.json({ success: true, preferences, planning_panel_order: planningOrder, live_panel_order: liveOrder });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

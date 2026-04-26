@@ -6,14 +6,20 @@ import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImag
 
 export default function SquadPitch() {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/squad/live')
       .then(res => res.json())
-      .then(d => setData(d));
+      .then(d => {
+        if (d && !d.error) setData(d);
+        else setError(true);
+      })
+      .catch(() => setError(true));
   }, []);
 
-  if (!data || data.error || !data.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading Pitch...</div>;
+  if (error) return null;
+  if (!data || !data.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading Pitch...</div>;
 
   const players = [...data.players].sort((a, b) => a.official_pos - b.official_pos);
   const starters = players.filter(p => p.was_started);
@@ -63,14 +69,16 @@ export default function SquadPitch() {
   const renderPlayer = (p: any, type: 'pitch' | 'bench') => {
     const isMissing = missingStarters.find(m => m.id === p.id);
     const isIncoming = subsIn.includes(p.id);
-    
+    const notYetPlayed = !p.is_finished && p.minutes === 0;
+    const displayedPoints = notYetPlayed ? null : p.live_points * (p.multiplier || 1);
+
     return (
-      <div 
-        key={p.id} 
+      <div
+        key={p.id}
         className={`${styles.playerCard} ${isMissing ? styles.dimmed : ''} ${isIncoming ? styles.highlight : ''}`}
       >
         <div className={styles.playerImageContainer}>
-          <img 
+          <img
             src={getPlayerPhotoUrl(p.photo, '110x140', p.id, p.teamCode)}
             alt={p.name}
             className={styles.playerImage}
@@ -88,8 +96,15 @@ export default function SquadPitch() {
           {isMissing && <span className={styles.subBadge} style={{color: '#ef4444'}}>OUT</span>}
           {isIncoming && <span className={styles.subBadge} style={{color: '#22c55e'}}>IN</span>}
         </div>
-        <div className={styles.playerPoints} style={{ color: p.live_points >= 6 ? '#22c55e' : p.live_points <= 2 ? '#ef4444' : '#38bdf8' }}>
-          {p.live_points * (p.multiplier || 1)}
+        <div
+          data-testid="player-points"
+          className={styles.playerPoints}
+          style={notYetPlayed
+            ? { color: '#475569' }
+            : { color: (p.live_points ?? 0) >= 6 ? '#22c55e' : (p.live_points ?? 0) <= 2 ? '#ef4444' : '#38bdf8' }
+          }
+        >
+          {displayedPoints === null ? '—' : displayedPoints}
         </div>
         <div className={styles.playerPrice}>
           £{p.price}m {(p.bonus > 0 || p.bps > 15) && <span style={{color: '#fbbf24', marginLeft: '4px'}}>{p.bonus > 0 ? `+${p.bonus}B` : `${p.bps}bps`}</span>}

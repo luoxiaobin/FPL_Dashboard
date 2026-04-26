@@ -61,8 +61,28 @@
   padding: 20px;
 }
 
+.scrollWrapper {
+  position: relative;
+}
+
+.scrollWrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, var(--glass-bg, #1e293b));
+  pointer-events: none;
+}
+
 .tableWrapper {
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tableWrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .table {

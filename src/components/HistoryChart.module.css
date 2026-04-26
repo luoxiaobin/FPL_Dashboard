@@ -100,9 +100,25 @@
   color: #475569;
 }
 
+.chartScroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chartScroll::-webkit-scrollbar {
+  display: none;
+}
+
 .chartContainer {
   width: 100%;
   height: 280px;
+}
+
+@media (max-width: 480px) {
+  .chartContainer {
+    min-width: 480px;
+  }
 }
 
 .tooltip {

@@ -133,15 +133,18 @@
   letter-spacing: 0.05em;
 }
 
-.mainGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-}
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
 
-@media (max-width: 1024px) {
-  .mainGrid {
-    grid-template-columns: 1fr;
+  .statValue {
+    font-size: 1.8rem;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
   }
 }
 

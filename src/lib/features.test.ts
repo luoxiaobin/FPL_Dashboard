@@ -1,4 +1,23 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { SECTION_KEYS, normalizeSectionPreferences } from './sectionPreferences';
+
+// --- sectionPreferences ---
+
+describe('sectionPreferences', () => {
+  it('includes transferOptimizer in SECTION_KEYS', () => {
+    expect(SECTION_KEYS).toContain('transferOptimizer');
+  });
+
+  it('normalizeSectionPreferences defaults transferOptimizer to true', () => {
+    const result = normalizeSectionPreferences({});
+    expect(result.transferOptimizer).toBe(true);
+  });
+
+  it('normalizeSectionPreferences respects false for transferOptimizer', () => {
+    const result = normalizeSectionPreferences({ transferOptimizer: false });
+    expect(result.transferOptimizer).toBe(false);
+  });
+});
 
 // --- GameweekHistory helpers ---
 

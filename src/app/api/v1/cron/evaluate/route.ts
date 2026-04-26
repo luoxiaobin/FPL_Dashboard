@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
-// To protect this route from arbitrary public triggers, Vercel cron uses a bearer token
-// or we can use a custom secret in the header. For now, we'll allow it or check a secret.
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(request: Request) {
   try {
-    // 1. Basic Authorization (Optional but recommended for Cron endpoints)
-    if (CRON_SECRET) {
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader !== `Bearer ${CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    // Require CRON_SECRET unconditionally — endpoint must not be open without it
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error('CRON_SECRET environment variable is not configured');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // 2. Fetch all Pending Recommendations
@@ -126,8 +125,9 @@ export async function GET(request: Request) {
         processed: processedCount 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron Evaluation Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
