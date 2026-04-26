@@ -6,14 +6,20 @@ import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImag
 
 export default function SquadPitch() {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/squad/live')
       .then(res => res.json())
-      .then(d => setData(d));
+      .then(d => {
+        if (d && !d.error) setData(d);
+        else setError(true);
+      })
+      .catch(() => setError(true));
   }, []);
 
-  if (!data || data.error || !data.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading Pitch...</div>;
+  if (error) return null;
+  if (!data || !data.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading Pitch...</div>;
 
   const players = [...data.players].sort((a, b) => a.official_pos - b.official_pos);
   const starters = players.filter(p => p.was_started);

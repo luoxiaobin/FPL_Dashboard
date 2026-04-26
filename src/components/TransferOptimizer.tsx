@@ -18,7 +18,7 @@ export default function TransferOptimizer() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/squad/optimize')
+    fetch('/api/v1/squad/optimize', { method: 'POST' })
       .then(res => {
         if (!res.ok) throw new Error('Optimizer route returned an error');
         return res.json();

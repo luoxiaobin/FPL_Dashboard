@@ -4,23 +4,47 @@ import { useEffect, useState } from 'react';
 import styles from './LivePoints.module.css';
 import { getPlayerPhotoUrl, TRANSPARENT_IMAGE_DATA_URI } from '../lib/playerImage';
 
+interface LivePlayer {
+  id: number;
+  name: string;
+  position: string;
+  live_points: number;
+  is_captain: boolean;
+  minutes: number;
+  bps: number;
+  bonus: number;
+  photo: string;
+  teamCode: number;
+}
+
+interface SquadData {
+  status: 'live' | 'provisional' | 'official';
+  players: LivePlayer[];
+}
+
 export default function LivePoints() {
-  const [squad, setSquad] = useState<any>(null);
+  const [squad, setSquad] = useState<SquadData | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/v1/squad/live')
       .then(res => res.json())
-      .then(data => setSquad(data));
+      .then(data => {
+        if (data && !data.error) setSquad(data);
+        else setError(true);
+      })
+      .catch(() => setError(true));
   }, []);
 
-  if (!squad || squad.error || !squad.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading...</div>;
+  if (error) return null;
+  if (!squad || !squad.players) return <div style={{ textAlign: 'center', opacity: 0.5 }}>Loading...</div>;
 
   return (
     <div className={styles.container}>
       <div className={`${styles.statusBanner} ${styles[squad.status]}`}>
         {squad.status === 'official' ? 'OFFICIAL GW STATUS' : squad.status === 'provisional' ? 'PROVISIONAL (MATCHES DONE)' : 'LIVE GW DATA'}
       </div>
-      {squad.players.slice(0, 11).sort((a:any, b:any) => b.live_points - a.live_points).map((player: any) => (
+      {squad.players.slice(0, 11).sort((a, b) => b.live_points - a.live_points).map((player) => (
         <div key={player.id} className={styles.playerRow}>
           <div className={styles.playerImageMini}>
             <img 

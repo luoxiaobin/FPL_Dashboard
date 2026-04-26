@@ -17,9 +17,25 @@ import CaptaincyAdviser from '../components/CaptaincyAdviser';
 import TransferOptimizer from '../components/TransferOptimizer';
 import { DEFAULT_SECTION_PREFERENCES, SectionPreferences } from '@/lib/sectionPreferences';
 
+interface UserSummary {
+  manager_name: string;
+  team_name: string;
+  overall_rank: number;
+  total_players: number;
+  bank_balance: number;
+  total_value: number;
+  transfers_available: number;
+}
+
+interface LiveSquadData {
+  gameweek: number;
+  status: 'live' | 'provisional' | 'official';
+  projected_points: number;
+}
+
 export default function DashboardShell() {
-  const [summary, setSummary] = useState<any>(null);
-  const [liveSquad, setLiveSquad] = useState<any>(null);
+  const [summary, setSummary] = useState<UserSummary | null>(null);
+  const [liveSquad, setLiveSquad] = useState<LiveSquadData | null>(null);
   const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
   const [sections, setSections] = useState<SectionPreferences>(DEFAULT_SECTION_PREFERENCES);
   const router = useRouter();
@@ -38,7 +54,6 @@ export default function DashboardShell() {
   };
 
   useEffect(() => {
-    // Fetch Summary
     fetch('/api/v1/user/summary')
       .then(async (res) => {
         if (res.status === 401) {
@@ -49,21 +64,22 @@ export default function DashboardShell() {
       })
       .then(data => {
         if (data && !data.error) setSummary(data);
-      });
+      })
+      .catch(err => console.error('Failed to load summary:', err));
 
-    // Fetch Live Squad for Projection
     fetch('/api/v1/squad/live')
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) setLiveSquad(data);
-      });
+      })
+      .catch(err => console.error('Failed to load live squad:', err));
 
-    // Fetch User Section Preferences
     fetch('/api/v1/user/preferences')
       .then(res => res.json())
       .then(data => {
         if (data?.preferences) setSections(data.preferences);
-      });
+      })
+      .catch(err => console.error('Failed to load preferences:', err));
   }, [router]);
 
   const handleLogout = async () => {

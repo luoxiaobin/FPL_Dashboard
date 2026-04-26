@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildClubFormMap } from '@/lib/clubForm';
 
-let bootstrapCache: any = null;
+// Per-instance in-memory cache. In a distributed deployment each instance has its own copy;
+// this is best-effort latency reduction, not a shared cache.
+let bootstrapCache: Record<string, unknown> | null = null;
 let lastFetchTime = 0;
+const CACHE_TTL_MS = 900_000; // 15 minutes
 
-async function getBootstrap() {
+async function getBootstrap(): Promise<Record<string, unknown> | null> {
   const now = Date.now();
-  if (bootstrapCache && (now - lastFetchTime) < 900000) { // 15 minute cache
+  if (bootstrapCache && (now - lastFetchTime) < CACHE_TTL_MS) {
     return bootstrapCache;
   }
   const res = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
@@ -64,26 +68,7 @@ export async function GET(req: NextRequest) {
       teamFinishedMap.set(f.team_a, true);
     });
 
-    // Calculate Club Form (Last 5 Results)
-    const clubFormMap = new Map<number, string>();
-    const teams = bootstrap.teams;
-    teams.forEach((t: any) => {
-      const teamFix = finishedFixtures
-        .filter((f: any) => f.team_h === t.id || f.team_a === t.id)
-        .sort((a: any, b: any) => b.event - a.event) // Most recent first
-        .slice(0, 5);
-
-      const form = teamFix.map((f: any) => {
-        const isHome = f.team_h === t.id;
-        const teamScore = isHome ? f.team_h_score : f.team_a_score;
-        const oppScore = isHome ? f.team_a_score : f.team_h_score;
-        if (teamScore > oppScore) return 'W';
-        if (teamScore < oppScore) return 'L';
-        return 'D';
-      }).reverse().join(''); // Store as historical order L -> W
-      
-      clubFormMap.set(t.id, form);
-    });
+    const clubFormMap = buildClubFormMap(finishedFixtures, bootstrap.teams as Array<{ id: number }>);
 
     const teamCodeMap = new Map(bootstrap.teams.map((t: any) => [t.id, t.code]));
 

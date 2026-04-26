@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildClubFormMap } from '@/lib/clubForm';
 
 export async function GET(req: NextRequest) {
   try {
@@ -83,26 +84,8 @@ export async function GET(req: NextRequest) {
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
     const elementTypes = new Map(bootstrap.element_types.map((et: any) => [et.id, et.singular_name_short]));
 
-    // Calculate Club Form (Last 5 Results)
     const finishedFixtures = allFixtures.filter((f: any) => f.finished || f.finished_provisional);
-    const clubFormMap = new Map<number, string>();
-    bootstrap.teams.forEach((t: any) => {
-      const teamFix = finishedFixtures
-        .filter((f: any) => f.team_h === t.id || f.team_a === t.id)
-        .sort((a: any, b: any) => b.event - a.event)
-        .slice(0, 5);
-
-      const form = teamFix.map((f: any) => {
-        const isHome = f.team_h === t.id;
-        const teamScore = isHome ? f.team_h_score : f.team_a_score;
-        const oppScore = isHome ? f.team_a_score : f.team_h_score;
-        if (teamScore > oppScore) return 'W';
-        if (teamScore < oppScore) return 'L';
-        return 'D';
-      }).reverse().join('');
-      
-      clubFormMap.set(t.id, form);
-    });
+    const clubFormMap = buildClubFormMap(finishedFixtures, bootstrap.teams as Array<{ id: number }>);
 
     const players = picksData.picks.slice(0, 15).map((pick: any) => {
       const el: any = elementsMap.get(pick.element) || {};

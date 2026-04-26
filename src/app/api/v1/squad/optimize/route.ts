@@ -30,23 +30,26 @@ export async function POST(req: NextRequest) {
     const picksData = await picksRes.json();
     
     const userSquadIds = new Set(picksData.picks.map((p: any) => p.element));
+    // Build sell-price map from picks (FPL depreciates sell price when a player rises in value)
+    const sellPriceMap = new Map<number, number>(
+      picksData.picks.map((p: { element: number; selling_price: number }) => [p.element, p.selling_price])
+    );
     const squadPlayers = bootstrap.elements.filter((p: any) => userSquadIds.has(p.id));
     const availablePlayers = bootstrap.elements.filter((p: any) => !userSquadIds.has(p.id));
 
     // 3. Simple V1 Optimization Algorithm
-    // Find the worst performing players in squad based on EP
     const squadPlayersSorted = squadPlayers.sort((a: any, b: any) => parseFloat(a.ep_next || '0') - parseFloat(b.ep_next || '0'));
     const suggestions: any[] = [];
-    
+
     const bankBalance = picksData.entry_history?.bank || 0;
 
-    // Evaluate replacements for up to 3 underperforming players
     for (let i = 0; i < Math.min(3, squadPlayersSorted.length); i++) {
         const outPlayer = squadPlayersSorted[i];
-        
-        // Find best replacement in the same position within budget
+        // Use actual sell price (accounts for FPL price-rise depreciation)
+        const outSellPrice = sellPriceMap.get(outPlayer.id) ?? outPlayer.now_cost;
+
         const bestReplacements = availablePlayers
-            .filter((p: any) => p.element_type === outPlayer.element_type && p.now_cost <= (outPlayer.now_cost + bankBalance))
+            .filter((p: any) => p.element_type === outPlayer.element_type && p.now_cost <= (outSellPrice + bankBalance))
             .sort((a: any, b: any) => parseFloat(b.ep_next || '0') - parseFloat(a.ep_next || '0'));
 
         const inPlayer = bestReplacements[0];
@@ -99,8 +102,4 @@ export async function POST(req: NextRequest) {
     console.error('Optimizer Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-export async function GET(req: NextRequest) {
-  return POST(req);
 }
