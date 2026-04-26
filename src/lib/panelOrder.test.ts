@@ -32,9 +32,9 @@ describe('mergeOrder', () => {
   });
 
   it('appends default keys missing from saved', () => {
-    const saved = ['livePoints'];
+    const saved = ['gwLive'];
     const result = mergeOrder(saved, PLANNING_DEFAULT_ORDER);
-    expect(result).toHaveLength(ALL_PANEL_KEYS.length);
+    expect(result).toHaveLength(PLANNING_DEFAULT_ORDER.length);
   });
 
   it('result contains every panel key exactly once', () => {
@@ -51,9 +51,9 @@ describe('mergeOrder', () => {
   });
 
   it('ignores unknown keys but still includes valid saved keys', () => {
-    const result = mergeOrder(['unknownKey', 'livePoints'], PLANNING_DEFAULT_ORDER);
-    expect(result[0]).toBe('livePoints');
-    expect(result).toHaveLength(ALL_PANEL_KEYS.length);
+    const result = mergeOrder(['unknownKey', 'gwLive'], PLANNING_DEFAULT_ORDER);
+    expect(result[0]).toBe('gwLive');
+    expect(result).toHaveLength(PLANNING_DEFAULT_ORDER.length);
   });
 });
 

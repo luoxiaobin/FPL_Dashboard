@@ -1,7 +1,8 @@
 export const ALL_PANEL_KEYS = [
   'syncStatus',
-  'livePoints',
-  'squadPitch',
+  'gwLive',
+  'livePoints',    // legacy — maps to gwLive in renderPanel
+  'squadPitch',    // legacy — maps to gwLive in renderPanel
   'captaincyAdviser',
   'transferOptimizer',
   'transferAnalyser',
@@ -26,16 +27,14 @@ export const PLANNING_DEFAULT_ORDER: PanelKey[] = [
   'historyChart',
   'gameweekHistory',
   'fixtureTicker',
-  'squadPitch',
-  'livePoints',
+  'gwLive',
   'leagueLive',
   'rivalCompare',
 ];
 
 export const LIVE_DEFAULT_ORDER: PanelKey[] = [
   'syncStatus',
-  'livePoints',
-  'squadPitch',
+  'gwLive',
   'leagueLive',
   'captaincyAdviser',
   'rankProjection',

@@ -1,0 +1,319 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.loading {
+  text-align: center;
+  opacity: 0.5;
+  padding: 20px;
+}
+
+/* ── Projection header ─────────────────────────────────────────────────── */
+.projectionHeader {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(8px);
+}
+
+.projectionLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.projectionValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #22c55e;
+}
+
+.projectionSub {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.projectionHeader.official    { border-color: rgba(16,185,129,0.3); }
+.projectionHeader.provisional { border-color: rgba(245,158,11,0.3); }
+.projectionHeader.live        { border-color: rgba(56,189,248,0.3); }
+
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  padding: 7px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.07);
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 36px;
+}
+
+.tabActive {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+/* ── Pitch view ─────────────────────────────────────────────────────────── */
+.pitch {
+  background: linear-gradient(180deg, #166534 0%, #15803d 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.pitch::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pitch::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.pitchRow {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.bench {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.benchTitle {
+  color: #94a3b8;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.benchRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Player card */
+.card {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0 0 8px 0;
+  text-align: center;
+  min-width: 100px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: #38bdf8;
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.2);
+}
+
+.cardImg {
+  width: 100%; height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: visible;
+  margin-bottom: 6px;
+}
+
+.cardImgEl {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.cardName {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.cardPts {
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 4px 0;
+}
+
+.cardPrice {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.dimmed  { opacity: 0.4; filter: grayscale(0.8); border-style: dashed; }
+.highlight { border: 1px solid #22c55e; box-shadow: 0 0 15px rgba(34,197,94,0.2); background: rgba(34,197,94,0.05); }
+
+.capTag {
+  background: #fbbf24;
+  color: #000;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 900;
+}
+
+.subBadge {
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+}
+
+/* ── List view ──────────────────────────────────────────────────────────── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.listRow:hover { background: rgba(255,255,255,0.07); }
+
+.listImg {
+  width: 34px; height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.listImgEl {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.listInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.listName {
+  font-weight: 600;
+  color: #f8fafc;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.listMeta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.listPtsBlock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bonusTag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.listPts {
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: right;
+}
+
+.listDivider {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #475569;
+  padding: 8px 14px 4px;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .pitchRow { gap: 6px; }
+
+  .card { width: 54px; min-width: 54px; }
+
+  .cardImg { height: 56px; }
+
+  .cardName {
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50px;
+    display: block;
+  }
+
+  .cardPts  { font-size: 0.85rem; }
+  .cardPrice { font-size: 0.55rem; }
+}

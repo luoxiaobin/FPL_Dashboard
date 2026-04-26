@@ -3,10 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-import LivePoints from '../components/LivePoints';
+import GwLive from '../components/GwLive';
 import LeagueStandings from '../components/LeagueStandings';
 import LeagueLive from '../components/LeagueLive';
-import SquadPitch from '../components/SquadPitch';
 import HistoryChart from '../components/HistoryChart';
 import GameweekHistory from '../components/GameweekHistory';
 import SyncStatus from '../components/SyncStatus';
@@ -120,21 +119,10 @@ export default function DashboardShell() {
       case 'syncStatus':
         return <SyncStatus key="syncStatus" />;
 
+      case 'gwLive':
       case 'livePoints':
-        return (
-          <div key="livePoints" className={styles.panel}>
-            <h2 className={styles.panelTitle}>Live Points</h2>
-            <LivePoints />
-          </div>
-        );
-
       case 'squadPitch':
-        return (
-          <div key="squadPitch" className={styles.panel}>
-            <h2 className={styles.panelTitle}>Live Squad Pitch</h2>
-            <SquadPitch />
-          </div>
-        );
+        return <GwLive key="gwLive" />;
 
       case 'captaincyAdviser':
         return <CaptaincyAdviser key="captaincyAdviser" />;
@@ -183,11 +171,14 @@ export default function DashboardShell() {
 
   const currentOrder = effectiveMode === 'live' ? liveOrder : planningOrder;
 
-  // Deduplicate: leagueStandings and leagueLive share one slot
+  // Deduplicate: merged panels share one render slot
   const renderedKeys = new Set<string>();
   const panelNodes = currentOrder
     .filter(key => {
-      const slot = key === 'leagueLive' ? 'leagueStandings' : key;
+      const slot =
+        key === 'leagueLive' ? 'leagueStandings' :
+        (key === 'livePoints' || key === 'squadPitch') ? 'gwLive' :
+        key;
       if (renderedKeys.has(slot)) return false;
       renderedKeys.add(slot);
       return true;

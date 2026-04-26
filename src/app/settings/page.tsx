@@ -21,8 +21,9 @@ import {
 
 const PANEL_LABELS: Record<PanelKey, string> = {
   syncStatus: 'Sync Status',
-  livePoints: 'Live Points',
-  squadPitch: 'Live Squad Pitch',
+  gwLive: 'GW Live (Squad + Points)',
+  livePoints: 'Live Points (legacy)',
+  squadPitch: 'Live Squad Pitch (legacy)',
   captaincyAdviser: 'Captaincy Adviser',
   transferOptimizer: 'Transfer Optimizer',
   transferAnalyser: 'Transfer Analyser',
