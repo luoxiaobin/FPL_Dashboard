@@ -133,6 +133,21 @@
   letter-spacing: 0.05em;
 }
 
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .statValue {
+    font-size: 1.8rem;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+  }
+}
+
 @media (max-width: 640px) {
   .header {
     align-items: flex-start;

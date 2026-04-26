@@ -203,6 +203,7 @@ export default function FixtureTicker() {
         </div>
       </div>
 
+      <div data-testid="fixture-scroll-wrapper" className={styles.scrollWrapper}>
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
@@ -225,6 +226,7 @@ export default function FixtureTicker() {
             )}
           </tbody>
         </table>
+      </div>
       </div>
 
       <div className={styles.legend}>

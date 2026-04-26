@@ -135,7 +135,8 @@ export default function HistoryChart() {
         </div>
       </div>
 
-      <div className={styles.chartContainer}>
+      <div data-testid="history-chart-scroll" className={styles.chartScroll}>
+      <div data-testid="history-chart-container" className={styles.chartContainer}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={history} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.3} />
@@ -253,6 +254,7 @@ export default function HistoryChart() {
             ))}
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
       </div>
     </div>
   );

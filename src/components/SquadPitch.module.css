@@ -190,3 +190,35 @@
   border-radius: 4px;
   font-weight: 900;
 }
+
+@media (max-width: 480px) {
+  .row {
+    gap: 6px;
+  }
+
+  .playerCard {
+    width: 54px;
+    min-width: 54px;
+  }
+
+  .playerImageContainer {
+    height: 56px;
+  }
+
+  .playerName {
+    font-size: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 50px;
+    display: block;
+  }
+
+  .playerPoints {
+    font-size: 0.85rem;
+  }
+
+  .playerPrice {
+    font-size: 0.55rem;
+  }
+}
