@@ -3,11 +3,13 @@ import { buildClubFormMap } from '@/lib/clubForm';
 
 // Per-instance in-memory cache. In a distributed deployment each instance has its own copy;
 // this is best-effort latency reduction, not a shared cache.
-let bootstrapCache: Record<string, unknown> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let bootstrapCache: any = null;
 let lastFetchTime = 0;
 const CACHE_TTL_MS = 900_000; // 15 minutes
 
-async function getBootstrap(): Promise<Record<string, unknown> | null> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getBootstrap(): Promise<any> {
   const now = Date.now();
   if (bootstrapCache && (now - lastFetchTime) < CACHE_TTL_MS) {
     return bootstrapCache;
