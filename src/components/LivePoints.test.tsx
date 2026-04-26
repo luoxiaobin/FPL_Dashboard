@@ -1,6 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { vi, describe, it, expect, afterEach } from 'vitest';
 import LivePoints from './LivePoints';
+
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 const mockSquad = {
   status: 'live' as const,
@@ -11,8 +13,6 @@ const mockSquad = {
       minutes: 90, bps: 50, bonus: 0, photo: '67890', teamCode: 11 },
   ],
 };
-
-afterEach(() => vi.restoreAllMocks());
 
 describe('LivePoints — error handling', () => {
   it('shows loading initially while fetch is pending', () => {
