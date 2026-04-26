@@ -105,6 +105,23 @@
   font-size: 1.1em;
 }
 
+.clubBadge {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+
+.clubName {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 1px;
+}
+
 .emptyState {
   text-align: center;
   color: #64748b;

@@ -7,15 +7,16 @@ export async function POST(req: NextRequest) {
     if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // 1. Fetch bootstrap to get current GW
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { 
-      headers: { 'User-Agent': 'Mozilla/5.0' } 
+    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    
+
     if (!bootstrapRes.ok) {
         return NextResponse.json({ error: 'Failed to fetch FPL bootstrap' }, { status: 500 });
     }
-    
+
     const bootstrap = await bootstrapRes.json();
+    const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, { code: t.code, short_name: t.short_name }]));
     const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
     const targetGW = (currentGWData.finished && currentGWData.id < 38) ? currentGWData.id + 1 : currentGWData.id;
 
@@ -58,12 +59,18 @@ export async function POST(req: NextRequest) {
             const expectedGain = parseFloat(inPlayer.ep_next || '0') - parseFloat(outPlayer.ep_next || '0');
             
             if (expectedGain > 0) {
+                const outTeam = teamMap.get(outPlayer.team) as { code: number; short_name: string } | undefined;
+                const inTeam  = teamMap.get(inPlayer.team)  as { code: number; short_name: string } | undefined;
                 suggestions.push({
                     out_id: outPlayer.id,
                     in_id: inPlayer.id,
                     expected_gain: Number(expectedGain.toFixed(1)),
                     out_name: outPlayer.web_name,
                     in_name: inPlayer.web_name,
+                    out_team_code: outTeam?.code ?? null,
+                    in_team_code:  inTeam?.code  ?? null,
+                    out_club: outTeam?.short_name ?? null,
+                    in_club:  inTeam?.short_name  ?? null,
                     rationale: `${inPlayer.web_name} provides higher expected points (${inPlayer.ep_next}) compared to ${outPlayer.web_name} (${outPlayer.ep_next}) while remaining within budget constraints.`
                 });
             }
