@@ -30,9 +30,9 @@ export const DEFAULT_SECTION_PREFERENCES: SectionPreferences = {
 export const SECTION_LABELS: Record<SectionKey, string> = {
   captaincyAdviser: 'Captaincy Adviser',
   rankProjection: 'Rank Projection',
-  historyChart: 'Season History Chart',
-  gameweekHistory: 'Gameweek History',
-  fixtureTicker: 'Fixture Ticker',
+  historyChart: 'Tournament History Chart',
+  gameweekHistory: 'Matchday History',
+  fixtureTicker: 'Match Schedule',
   transferAnalyser: 'Transfer Analyser',
   transferOptimizer: 'Transfer Optimizer',
   squadPitch: 'Live Squad Pitch',

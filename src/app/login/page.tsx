@@ -49,30 +49,30 @@ export default function LoginPage() {
   return (
     <div className={styles.container}>
       <div className={styles.loginCard}>
-        <h1 className={styles.title}>FPL Public Dashboard</h1>
-        
+        <h1 className={styles.title}>⚽ FIFA WC 2026 Fantasy Dashboard</h1>
+
         {error && <div className={styles.error}>{error}</div>}
 
         <form className={styles.form} onSubmit={handleLogin}>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="teamId">FPL Numeric Team ID</label>
+            <label className={styles.label} htmlFor="teamId">FIFA Fantasy Team ID</label>
             <input
               id="teamId"
               type="text"
               className={styles.input}
               value={teamId}
               onChange={(e) => setTeamId(e.target.value)}
-              placeholder="e.g. 1234567"
+              placeholder="Your numeric team ID from play.fifa.com"
               required
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={styles.submitButton}
             disabled={isLoading || !teamId}
           >
-            {isLoading ? 'Searching...' : 'Load Dashboard'}
+            {isLoading ? 'Loading...' : 'Load Dashboard'}
           </button>
         </form>
       </div>

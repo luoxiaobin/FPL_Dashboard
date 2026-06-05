@@ -69,9 +69,10 @@ export default function GwLive() {
     return acc + p.live_points * (p.multiplier || 1);
   }, 0) + bench.filter(p => subsIn.includes(p.id)).reduce((acc, p) => acc + p.live_points, 0);
 
-  const statusLabel = data.status === 'official' ? 'OFFICIAL POINTS'
-    : data.status === 'provisional' ? 'PROVISIONAL SCORE'
-    : 'LIVE PROJECTED POINTS';
+  const md = (data as any).matchday ?? data.gameweek;
+  const statusLabel = data.status === 'official' ? `MD${md} OFFICIAL POINTS`
+    : data.status === 'provisional' ? `MD${md} PROVISIONAL SCORE`
+    : `MD${md} LIVE PROJECTED POINTS`;
 
   const notYetPlayed = (p: Player) => !p.is_finished && p.minutes === 0;
   const displayPts   = (p: Player) => notYetPlayed(p) ? null : p.live_points * (p.multiplier || 1);

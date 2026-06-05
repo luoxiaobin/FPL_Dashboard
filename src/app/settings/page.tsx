@@ -21,7 +21,7 @@ import {
 
 const PANEL_LABELS: Record<PanelKey, string> = {
   syncStatus: 'Sync Status',
-  gwLive: 'GW Live (Squad + Points)',
+  gwLive: 'Live Squad + Points',
   livePoints: 'Live Points (legacy)',
   squadPitch: 'Live Squad Pitch (legacy)',
   captaincyAdviser: 'Captaincy Adviser',
@@ -30,9 +30,9 @@ const PANEL_LABELS: Record<PanelKey, string> = {
   rankProjection: 'Rank Projection',
   leagueStandings: 'League Standings',
   leagueLive: 'League Live',
-  historyChart: 'Season History Chart',
-  gameweekHistory: 'Gameweek History',
-  fixtureTicker: 'Fixture Ticker',
+  historyChart: 'Tournament History Chart',
+  gameweekHistory: 'Matchday History',
+  fixtureTicker: 'Match Schedule',
   rivalCompare: 'Rival Compare',
 };
 

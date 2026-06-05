@@ -170,7 +170,7 @@ export default function FixtureTicker() {
                     key={`${gw}-${fix.opponent}-${index}`}
                     className={styles.fixChip}
                     style={{ background: difficultyColor(fix.difficulty) }}
-                    title={`GW${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
+                    title={`MD${gw}: ${fix.opponent} (${fix.home ? 'H' : 'A'}) - Difficulty ${fix.difficulty}`}
                   >
                     {fix.opponent}
                     <span className={styles.venue}>{fix.home ? 'H' : 'A'}</span>
@@ -190,14 +190,14 @@ export default function FixtureTicker() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Squad Fixture Ticker</h2>
+        <h2 className={styles.title}>Squad Match Schedule</h2>
         <div className={styles.headerMeta}>
           {showNoSpecialWeeksIndicator && (
-            <span className={styles.windowIndicator}>No DGW/BGW in next 5 GWs</span>
+            <span className={styles.windowIndicator}>No double/blank rounds in next 5</span>
           )}
           <div className={styles.gwLabels}>
             {data.nextGWs.map(gw => (
-              <span key={gw} className={styles.gwLabel}>GW{gw}</span>
+              <span key={gw} className={styles.gwLabel}>MD{gw}</span>
             ))}
           </div>
         </div>
@@ -208,10 +208,10 @@ export default function FixtureTicker() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.playerCol}>Player / Club</th>
-              <th className={styles.gwCol} title="30-day Rolling Avg Pts">Form</th>
+              <th className={styles.playerCol}>Player / Nation</th>
+              <th className={styles.gwCol} title="Recent form">Form</th>
               <th className={styles.gwCol}>Status</th>
-              {data.nextGWs.map(gw => <th key={gw} className={styles.gwCol}>GW{gw}</th>)}
+              {data.nextGWs.map(gw => <th key={gw} className={styles.gwCol}>MD{gw}</th>)}
             </tr>
           </thead>
           <tbody>

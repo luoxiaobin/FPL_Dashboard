@@ -1,41 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fifaFetch, getBootstrap } from '@/lib/fifaApi';
 
 export async function GET(req: NextRequest) {
   try {
     const entryId = req.cookies.get('fpl_entry_id')?.value;
+    if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!entryId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const [historyRes, bootstrapRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/bootstrap-static/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [historyData, bootstrap] = await Promise.all([
+      fifaFetch(`/entry/${entryId}/history/`),
+      getBootstrap(),
     ]);
 
-    if (!historyRes.ok || !bootstrapRes.ok) {
-      return NextResponse.json({ error: 'FPL API Error' }, { status: 502 });
-    }
+    const mdAverages = new Map(bootstrap.events.map(e => [e.id, e.average_entry_score]));
 
-    const historyData = await historyRes.json();
-    const bootstrapData = await bootstrapRes.json();
-
-    const gwAverages = new Map(bootstrapData.events.map((e: any) => [e.id, e.average_entry_score]));
-
-    // Merge average scores into current history
     const currentWithAverages = (historyData.current || []).map((h: any) => ({
       ...h,
-      avg_points: gwAverages.get(h.event) || 0,
-      avg_score: gwAverages.get(h.event) || 0 // Keep both for compatibility
+      avg_points: mdAverages.get(h.event) || 0,
+      avg_score: mdAverages.get(h.event) || 0,
     }));
 
-    return NextResponse.json({
-      ...historyData,
-      current: currentWithAverages
-    });
-
+    return NextResponse.json({ ...historyData, current: currentWithAverages });
   } catch (error) {
-    console.error('History API Proxy Error:', error);
+    console.error('History API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

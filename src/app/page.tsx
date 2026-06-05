@@ -63,11 +63,12 @@ export default function DashboardShell() {
   }, []);
 
   const getScoreLabel = () => {
-    if (!liveSquad?.gameweek) return 'Score';
-    switch (liveSquad.status) {
-      case 'official': return `GW${liveSquad.gameweek} Official Score`;
-      case 'provisional': return `GW${liveSquad.gameweek} Provisional Score`;
-      default: return `GW${liveSquad.gameweek} Live Score`;
+    const md = (liveSquad as any)?.matchday ?? liveSquad?.gameweek;
+    if (!md) return 'Score';
+    switch (liveSquad?.status) {
+      case 'official': return `MD${md} Official Score`;
+      case 'provisional': return `MD${md} Provisional Score`;
+      default: return `MD${md} Live Score`;
     }
   };
 
@@ -189,20 +190,14 @@ export default function DashboardShell() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.branding}>
-          <img
-            src="/branding/logos/logo-final-full.svg"
-            alt="FPL Dashboard"
-            className={styles.logoFull}
-          />
-          <img
-            src="/branding/logos/logo-final-icon.svg"
-            alt="FPL Dashboard"
-            className={styles.logoIcon}
-          />
+          <div className={styles.logoFull} style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '-0.02em' }}>
+            ⚽ FIFA WC 2026 Fantasy
+          </div>
+          <div className={styles.logoIcon} style={{ fontSize: '1.6rem' }}>⚽</div>
           <div className={styles.teamName}>
             {summary
-              ? `FPL Manager: ${summary.manager_name || summary.team_name}`
-              : 'FPL Manager: Loading...'}
+              ? `Manager: ${summary.manager_name || summary.team_name}`
+              : 'Manager: Loading...'}
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -240,13 +235,13 @@ export default function DashboardShell() {
         </div>
         <div className={styles.statCard}>
           <div className={styles.statLabel}>Bank Balance</div>
-          <div className={styles.statValue}>£{summary?.bank_balance.toFixed(1) ?? '-'}m</div>
+          <div className={styles.statValue}>${summary?.bank_balance.toFixed(1) ?? '-'}m</div>
           <div className={styles.statBadge}>
-            Team Value: £{summary?.total_value?.toFixed(1) ?? '-'}m
+            Squad Value: ${summary?.total_value?.toFixed(1) ?? '-'}m
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Transfers</div>
+          <div className={styles.statLabel}>Free Transfers</div>
           <div className={styles.statValue}>{summary?.transfers_available ?? '-'}</div>
         </div>
       </div>
