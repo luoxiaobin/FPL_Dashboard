@@ -1,36 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildClubFormMap } from '@/lib/clubForm';
+import { FplApiError, getBootstrap, getFixtures, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
     const entryId = req.cookies.get('fpl_entry_id')?.value;
     if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Fetch bootstrap (players, teams, fixtures)
-    const [bootstrapRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-    ]);
+    // Fetch the season contract through the shared FPL boundary.
+    const [bootstrap, allFixtures] = await Promise.all([getBootstrap(), getFixtures()]);
 
-    if (!bootstrapRes.ok || !fixturesRes.ok) throw new Error('Failed to fetch FPL data');
-    const bootstrap = await bootstrapRes.json();
-    const allFixtures = await fixturesRes.json();
-
-    // Find current GW
-    const currentGWData = bootstrap.events.find((e: any) => e.is_current) ||
-                      bootstrap.events.find((e: any) => e.is_next);
-    if (!currentGWData) return NextResponse.json({ error: 'No active gameweek' }, { status: 404 });
-
-    const currentGW = currentGWData.id;
-    // Sync: If current is finished, start ticker from the next one
-    const targetGW = (currentGWData.finished && currentGW < 38) ? currentGW + 1 : currentGW;
+    const context = resolveGameweekContext(bootstrap.events);
+    const targetGW = context.planningGW;
+    const picksGW = context.picksGW;
+    if (!targetGW || !picksGW) {
+      return NextResponse.json({
+        error: 'FPL fixture planning data is not available yet.',
+        code: context.state,
+        season: context.seasonCode,
+        planning_gameweek: targetGW,
+      }, { status: 409 });
+    }
 
     // Build team lookup (id -> name, short_name)
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, { name: t.name, short: t.short_name }]));
 
     // Get next 5 GWs starting from targetGW
-    const nextGWs = [targetGW, targetGW + 1, targetGW + 2, targetGW + 3, targetGW + 4].filter(gw => gw <= 38);
-    const upcomingFixtures = allFixtures.filter((f: any) => nextGWs.includes(f.event) && (!f.finished && !f.finished_provisional));
+    const eventIds = bootstrap.events.map(event => event.id);
+    const nextGWs = eventIds.filter(gw => gw >= targetGW).slice(0, 5);
+    const upcomingFixtures = (allFixtures as any[]).filter((f: any) => nextGWs.includes(f.event) && (!f.finished && !f.finished_provisional));
 
     // Group fixtures by team: teamId -> [{gw, opponent, difficulty, home}]
     const fixturesByTeam = new Map<number, Array<{ gw: number; opponent: string; difficulty: number; home: boolean; isDGW?: boolean; secondaryOpponent?: string }>>();
@@ -74,17 +73,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Get user's current squad picks
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW}/picks/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    if (!picksRes.ok) throw new Error('Failed to fetch picks');
-    const picksData = await picksRes.json();
+    // Get the latest public squad picks; preseason/deadline gaps are explicit.
+    const picksData = await getPicks(entryId, picksGW);
 
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
     const elementTypes = new Map(bootstrap.element_types.map((et: any) => [et.id, et.singular_name_short]));
 
-    const finishedFixtures = allFixtures.filter((f: any) => f.finished || f.finished_provisional);
+    const finishedFixtures = (allFixtures as any[]).filter((f: any) => f.finished || f.finished_provisional);
     const clubFormMap = buildClubFormMap(finishedFixtures, bootstrap.teams as Array<{ id: number }>);
 
     const players = picksData.picks.slice(0, 15).map((pick: any) => {
@@ -113,6 +108,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ gameweek: targetGW, players, nextGWs });
 
   } catch (error: unknown) {
+    if (error instanceof FplApiError) {
+      const status = error.code === 'picks_unavailable' ? 409 : error.status;
+      return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status });
+    }
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
   }

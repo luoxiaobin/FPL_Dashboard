@@ -41,7 +41,7 @@ export function useGwMode(): GwMode {
         const res = await fetch('/api/v1/user/summary');
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setMode(statusToMode(data?.current_event_status));
+        if (!cancelled) setMode(statusToMode(data?.season_state || data?.current_event_status));
       } catch {
         // stay on last known mode
       }

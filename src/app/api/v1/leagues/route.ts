@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getEntry } from '@/lib/fpl/client';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,18 +9,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Leagues are available on the main entry endpoint
-    const res = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      }
-    });
+    const data = await getEntry<Record<string, any>>(entryId);
 
-    if (!res.ok) {
-      return NextResponse.json({ error: 'FPL API Error' }, { status: res.status });
-    }
-
-    const data = await res.json();
     const classicLeagues = data.leagues?.classic || [];
 
     const formattedLeagues = classicLeagues.map((l: any) => {

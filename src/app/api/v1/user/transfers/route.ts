@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getElementSummary, getEntryHistory, getEntryTransfers, getFixtures } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,36 +9,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 1. Fetch Transfer History, Chips, and Entry History
-    const [transRes, historyRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/transfers/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [transfers, history] = await Promise.all([
+      getEntryTransfers<Array<Record<string, any>>>(entryId),
+      getEntryHistory<Record<string, any>>(entryId),
     ]);
-
-    if (!transRes.ok || !historyRes.ok) throw new Error('Failed to fetch FPL history');
-    const transfers = await transRes.json();
-    const history = await historyRes.json();
     
     const chipsMap = new Map(history.chips?.map((c: any) => [c.event, c.name]));
     const hitsMap = new Map(history.current?.map((h: any) => [h.event, h.event_transfers_cost]));
 
-    // 2. Fetch Bootstrap and Fixtures
-    const [bootstrapRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
-    ]);
-    const [bootstrap, allFixtures] = await Promise.all([bootstrapRes.json(), fixturesRes.json()]);
+    const [bootstrap, allFixtures] = await Promise.all([getBootstrap(), getFixtures()]);
+    const context = resolveGameweekContext(bootstrap.events);
     
     const playersMap = new Map(bootstrap.elements.map((p: any) => [p.id, p]));
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, { name: t.name, short: t.short_name }]));
     
-    // Find next GWs for fixture ticker
-    const currentGW = bootstrap.events.find((e: any) => e.is_current)?.id || 1;
-    const nextGWs = [currentGW, currentGW + 1, currentGW + 2, currentGW + 3].filter(gw => gw <= 38);
+    // Find the next planning rounds from the live bootstrap, without a hard-coded GW limit.
+    const targetGW = context.planningGW ?? context.currentGW ?? 1;
+    const nextGWs = bootstrap.events.map(event => event.id).filter(gw => gw >= targetGW).slice(0, 4);
 
     // Group fixtures by team
     const fixturesByTeam = new Map<number, any[]>();
-    for (const fix of allFixtures) {
+    for (const fix of (allFixtures as any[])) {
       if (!fix.event || !nextGWs.includes(fix.event)) continue;
       
       const homeTeam = fix.team_h;
@@ -57,10 +50,7 @@ export async function GET(req: NextRequest) {
 
     const getPlayerPointsInGW = async (playerId: number, gw: number) => {
       if (!summaryCache.has(playerId)) {
-        const res = await fetch(`https://fantasy.premierleague.com/api/element-summary/${playerId}/`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        if (res.ok) summaryCache.set(playerId, await res.json());
+        summaryCache.set(playerId, await getElementSummary(playerId));
       }
       const summary = summaryCache.get(playerId);
       const gwData = summary?.history?.find((h: any) => h.round === gw);
@@ -104,9 +94,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       transfers: processedTransfers.reverse(), // Latest first
       totalTransfers: transfers.length,
+      season: context.seasonCode,
+      season_state: context.state,
     });
 
   } catch (error: any) {
+    if (error instanceof FplApiError) {
+      return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status: error.status });
+    }
     console.error('Transfer Analyser Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

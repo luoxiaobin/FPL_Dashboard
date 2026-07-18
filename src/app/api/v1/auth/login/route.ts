@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getEntry } from '@/lib/fpl/client';
+import { seasonCodeFromEvents } from '@/lib/fpl/gameweekContext';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
@@ -9,21 +11,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Valid Numeric Team ID required' }, { status: 400 });
     }
 
-    // Ping the public FPL entry endpoint to ensure this team ID actually exists
-    const meRes = await fetch(`https://fantasy.premierleague.com/api/entry/${teamId}/`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      }
-    });
+    const meData = await getEntry<Record<string, any>>(teamId);
 
-    if (!meRes.ok) {
-      if (meRes.status === 404) {
-        return NextResponse.json({ success: false, error: 'Team ID not found on FPL servers.' }, { status: 404 });
-      }
-      return NextResponse.json({ success: false, error: 'Failed to verify Team ID.' }, { status: 401 });
-    }
-
-    const meData = await meRes.json();
     const entryId = meData.id;
     const teamName = meData.name;
 
@@ -31,14 +20,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid response from FPL.' }, { status: 404 });
     }
 
-    // Persist user profile to Supabase (upsert gracefully handles returning users)
-    const { error: dbError } = await supabaseAdmin
-      .from('users')
-      .upsert(
-        { fpl_entry_id: entryId, team_name: teamName },
-        { onConflict: 'fpl_entry_id' }
-      );
+    // Persist the profile in the active season scope when the additive migration
+    // is present; retain the legacy path for pre-migration local environments.
+    let userPayload: Record<string, unknown> = { fpl_entry_id: entryId, team_name: teamName };
+    let onConflict = 'fpl_entry_id';
+    try {
+      const bootstrap = await getBootstrap();
+      const seasonCode = seasonCodeFromEvents(bootstrap.events);
+      const { data: season } = await supabaseAdmin.from('seasons').select('id').eq('code', seasonCode).maybeSingle();
+      if (season?.id) {
+        userPayload = { ...userPayload, season_id: season.id };
+        onConflict = 'season_id,fpl_entry_id';
+      }
+    } catch {
+      // Login should remain usable if season metadata is unavailable.
+    }
 
+    const { error: dbError } = await supabaseAdmin.from('users').upsert(userPayload, { onConflict });
     if (dbError) {
       // Log but don't block login — DB write is best-effort
       console.error('Supabase upsert error:', dbError.message);
@@ -59,6 +57,10 @@ export async function POST(req: NextRequest) {
     return response;
 
   } catch (error: unknown) {
+    if (error instanceof FplApiError) {
+      const status = error.code === 'not_found' ? 404 : error.status;
+      return NextResponse.json({ success: false, error: error.message, code: error.code }, { status });
+    }
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Login Error:', message);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });

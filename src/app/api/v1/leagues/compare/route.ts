@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getLiveEvent, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,24 +12,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing entry IDs' }, { status: 400 });
     }
 
-    // 1. Fetch Bootstrap (Player names/positions) & Live Points
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const bootstrap = await bootstrapRes.json();
-    const currentGW = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events.find((e: any) => e.is_next);
-    
-    const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${currentGW.id}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const liveData = await liveRes.json();
-    const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
+    const bootstrap = await getBootstrap();
+    const context = resolveGameweekContext(bootstrap.events);
+    const gameweek = context.currentGW ?? context.planningGW;
+    if (!gameweek) return NextResponse.json({ error: 'Gameweek data is not available', code: context.state }, { status: 409 });
+    const liveData = await getLiveEvent<{ elements?: Array<{ id: number; stats: Record<string, number> }> }>(gameweek);
+    const liveMap = new Map(liveData.elements?.map((el) => [el.id, el.stats]) || []);
 
-    // 2. Fetch Picks for both
-    const [myPicksRes, rivalPicksRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${myId}/event/${currentGW.id}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${rivalId}/event/${currentGW.id}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [myPicks, rivalPicks] = await Promise.all([
+      getPicks(myId, gameweek),
+      getPicks(rivalId, gameweek),
     ]);
-
-    if (!myPicksRes.ok || !rivalPicksRes.ok) throw new Error('Failed to fetch picks');
-    const myPicks = await myPicksRes.json();
-    const rivalPicks = await rivalPicksRes.json();
 
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
 
@@ -63,6 +58,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: any) {
+    if (error instanceof FplApiError) return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status: error.status });
     console.error('Comparison Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

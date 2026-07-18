@@ -1,38 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getFixtures, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
     const entryId = req.cookies.get('fpl_entry_id')?.value;
     if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // 1. Fetch Bootstrap (Global) and Picks (User)
-    const [bootstrapRes, picksRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/1/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }), // Fallback GW1 if current not found
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
-    ]);
-
-    const bootstrap = await bootstrapRes.json();
-    const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
-    const currentGW = currentGWData.id;
-    
-    // Logic: If current GW is finished, target the next one for suggestions
-    const targetGW = (currentGWData.finished && currentGW < 38) ? currentGW + 1 : currentGW;
-    
-    // Refetch picks for the GW we are looking at (if it's already active/finished)
-    // For future GWs, use current squad picks as proxy
-    const actualPicksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW}/picks/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    const picksData = await actualPicksRes.json();
-    const fixtures = await fixturesRes.json();
+    const bootstrap = await getBootstrap();
+    const context = resolveGameweekContext(bootstrap.events);
+    const currentGW = context.picksGW ?? context.currentGW;
+    const targetGW = context.planningGW ?? currentGW;
+    if (!currentGW || !targetGW) return NextResponse.json({ error: 'FPL gameweek data is not available', code: context.state }, { status: 409 });
+    const [picksData, fixtures] = await Promise.all([getPicks(entryId, currentGW), getFixtures()]);
+    const fixtureRows = fixtures as any[];
 
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, t]));
     const userSquadIds = new Set(picksData.picks.map((p: any) => p.element));
     
     // Map DGW/BGW Status for ALL teams for the targetGW
     const teamFixturesInTargetGW = new Map<number, any[]>();
-    fixtures.forEach((f: any) => {
+    fixtureRows.forEach((f: any) => {
       if (f.event === targetGW) {
         if (!teamFixturesInTargetGW.has(f.team_h)) teamFixturesInTargetGW.set(f.team_h, []);
         if (!teamFixturesInTargetGW.has(f.team_a)) teamFixturesInTargetGW.set(f.team_a, []);
@@ -43,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     // Determine the NEXT fixture for each team (for scoring)
     const teamNextFixture = new Map<number, any>();
-    const sortedFixtures = [...fixtures].sort((a, b) => a.event - b.event);
+    const sortedFixtures = [...fixtureRows].sort((a, b) => a.event - b.event);
     
     for (const f of sortedFixtures) {
       if (f.finished || f.event < targetGW) continue;
@@ -76,7 +64,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Calculate Club Form (Last 5 Results)
-    const finishedFixtures = fixtures.filter((f: any) => f.finished || f.finished_provisional);
+    const finishedFixtures = fixtureRows.filter((f: any) => f.finished || f.finished_provisional);
     const clubFormMap = new Map<number, string>();
     bootstrap.teams.forEach((t: any) => {
       const teamFix = finishedFixtures
@@ -166,6 +154,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       activeGW: currentGW,
+      season: context.seasonCode,
+      season_state: context.state,
       targetGW,
       suggestions: formattedSuggestions,
       transferTarget: {
@@ -176,6 +166,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
+    if (error instanceof FplApiError) return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status: error.status });
     console.error('Suggestions Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getLiveEvent } from '@/lib/fpl/client';
+import { seasonCodeFromEvents } from '@/lib/fpl/gameweekContext';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: Request) {
@@ -29,9 +31,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'No pending recommendations found', processed: 0 });
     }
 
+    const bootstrap = await getBootstrap();
+    const seasonCode = seasonCodeFromEvents(bootstrap.events);
+    const { data: activeSeason } = await supabaseAdmin
+      .from('seasons').select('id').eq('code', seasonCode).maybeSingle();
+    const logsForEvaluation = activeSeason
+      ? pendingLogs.filter((log: any) => !log.season_id || log.season_id === activeSeason.id)
+      : pendingLogs;
     // 3. Batch logs by Gameweek to limit API calls
     const logsByGameweek = new Map<number, any[]>();
-    for (const log of pendingLogs) {
+    for (const log of logsForEvaluation) {
       if (!logsByGameweek.has(log.gameweek_id)) {
         logsByGameweek.set(log.gameweek_id, []);
       }
@@ -41,15 +50,6 @@ export async function GET(request: Request) {
     let processedCount = 0;
 
     // 4. Check Gameweek Event Statuses
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      cache: 'no-store'
-    });
-    
-    if (!bootstrapRes.ok) {
-        throw new Error('Failed to fetch FPL bootstrap');
-    }
-    const bootstrap = await bootstrapRes.json();
 
     const updatesToApply: any[] = [];
 
@@ -64,18 +64,14 @@ export async function GET(request: Request) {
         continue; // Skip this gameweek, evaluate next time
       }
 
-      // Fetch live points for this fully finished gameweek
-      const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${gw}/live/`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        cache: 'no-store'
-      });
-
-      if (!liveRes.ok) {
-        console.error(`Failed to fetch live points for GW ${gw}`);
+      // Fetch live points through the shared client.
+      let liveData: { elements?: Array<{ id: number; stats: { total_points?: number } }> };
+      try {
+        liveData = await getLiveEvent<{ elements?: Array<{ id: number; stats: { total_points?: number } }> }>(gw);
+      } catch (error) {
+        if (error instanceof FplApiError) console.error('Failed to fetch live points:', error.code);
         continue;
       }
-
-      const liveData = await liveRes.json();
       
       // Create a fast lookup map for points: element_id -> total_points
       const pointsMap = new Map<number, number>();

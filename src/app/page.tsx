@@ -37,6 +37,10 @@ interface UserSummary {
   bank_balance: number;
   total_value: number;
   transfers_available: number;
+  season?: string;
+  season_state?: string;
+  current_gameweek?: number | null;
+  planning_gameweek?: number | null;
 }
 
 interface LiveSquadData {
@@ -219,6 +223,16 @@ export default function DashboardShell() {
           </button>
         </div>
       </header>
+
+      {summary?.season_state && summary.season_state !== 'live' && (
+        <div role="status" style={{ margin: '12px 0', padding: '10px 14px', borderRadius: 10, background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', color: '#bae6fd' }}>
+          {summary.season_state === 'preseason' || summary.season_state === 'before_first_deadline'
+            ? 'The current season is preparing for its first deadline. Squad picks will appear after the deadline.'
+            : summary.season_state === 'postseason'
+              ? 'The season is complete. Historical data remains available.'
+              : `Planning GW${summary.planning_gameweek ?? '—'}; last official GW${summary.current_gameweek ?? '—'}.`}
+        </div>
+      )}
 
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>

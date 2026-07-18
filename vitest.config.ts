@@ -11,6 +11,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    include: ['**/*.test.tsx', '**/*.test.ts'],
+    include: ['src/**/*.test.tsx', 'src/**/*.test.ts'],
+    exclude: ['.claude/worktrees/**', '.next/**', 'graphify-out/**', 'superpowers/**', 'node_modules/**'],
   },
 })

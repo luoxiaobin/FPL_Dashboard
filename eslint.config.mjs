@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".claude/worktrees/**",
+    "graphify-out/**",
+    "superpowers/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

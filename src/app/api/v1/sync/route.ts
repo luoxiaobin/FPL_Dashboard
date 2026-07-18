@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server';
+import { FplApiError, getBootstrap, getEntryHistory, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
@@ -25,24 +27,26 @@ export async function GET(req: NextRequest) {
         // --- Step 1: Bootstrap (gameweeks + players) ---
         send({ step: 'bootstrap', message: 'Fetching FPL bootstrap data...' });
 
-        const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-        });
-        if (!bootstrapRes.ok) throw new Error('Failed to fetch bootstrap data');
-        const bootstrap = await bootstrapRes.json();
+        const bootstrap = await getBootstrap();
+        const context = resolveGameweekContext(bootstrap.events);
+        const { data: season, error: seasonError } = await supabase
+          .from('seasons').select('id').eq('code', context.seasonCode).single();
+        if (seasonError || !season) throw new Error(`Season ${context.seasonCode} is not prepared in Supabase.`);
 
         // Upsert gameweeks
         const gameweeks = bootstrap.events.map((gw: any) => ({
+          season_id: season.id,
           id: gw.id,
           deadline_time: gw.deadline_time,
           is_current: gw.is_current,
           is_next: gw.is_next,
         }));
-        await supabase.from('gameweeks').upsert(gameweeks, { onConflict: 'id' });
+        await supabase.from('gameweeks').upsert(gameweeks, { onConflict: 'season_id,id' });
         send({ step: 'gameweeks', message: `Synced ${gameweeks.length} gameweeks`, done: gameweeks.length });
 
         // Upsert players
         const players = bootstrap.elements.map((p: any) => ({
+          season_id: season.id,
           id: p.id,
           web_name: p.web_name,
           position: ['GKP', 'DEF', 'MID', 'FWD'][p.element_type - 1],
@@ -52,25 +56,21 @@ export async function GET(req: NextRequest) {
             : p.status === 's' ? 'Suspended'
             : 'Unavailable',
         }));
-        await supabase.from('players').upsert(players, { onConflict: 'id' });
+        await supabase.from('players').upsert(players, { onConflict: 'season_id,id' });
         send({ step: 'players', message: `Synced ${players.length} players`, done: players.length });
 
         // --- Step 2: Ensure user exists in DB ---
         await supabase.from('users').upsert(
-          { fpl_entry_id: parseInt(entryId), team_name: 'Unknown' },
-          { onConflict: 'fpl_entry_id' }
+          { season_id: season.id, fpl_entry_id: parseInt(entryId), team_name: 'Unknown' },
+          { onConflict: 'season_id,fpl_entry_id' }
         );
         const { data: userData } = await supabase
-          .from('users').select('id').eq('fpl_entry_id', parseInt(entryId)).single();
+          .from('users').select('id').eq('season_id', season.id).eq('fpl_entry_id', parseInt(entryId)).single();
         if (!userData) throw new Error('User not found in database');
         const userId = userData.id;
 
         // --- Step 3: Squad history picks ---
-        const historyRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        if (!historyRes.ok) throw new Error('Failed to fetch squad history');
-        const history = await historyRes.json();
+        const history = await getEntryHistory<Record<string, any>>(entryId);
         const totalGWs = history.current.length;
 
         send({ step: 'picks_start', message: `Syncing ${totalGWs} gameweek squads...`, total: totalGWs, done: resumeFrom });
@@ -82,26 +82,27 @@ export async function GET(req: NextRequest) {
             .from('squads')
             .upsert({
               user_id: userId,
+              season_id: season.id,
               gameweek_id: gw.event,
               bank_balance: gw.bank / 10,
-            }, { onConflict: 'user_id,gameweek_id' })
+            }, { onConflict: 'user_id,season_id,gameweek_id' })
             .select('id')
             .single();
 
           if (squadData) {
-            const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${gw.event}/picks/`, {
-              headers: { 'User-Agent': 'Mozilla/5.0' }
-            });
-            if (picksRes.ok) {
-              const picksData = await picksRes.json();
+            try {
+              const picksData = await getPicks(entryId, gw.event);
               const squadPlayers = picksData.picks.map((pick: any) => ({
                 squad_id: squadData.id,
+                season_id: season.id,
                 player_id: pick.element,
                 multiplier: pick.multiplier,
                 is_vice_captain: pick.is_vice_captain,
                 pitch_position: pick.position,
               }));
               await supabase.from('squad_players').upsert(squadPlayers, { onConflict: 'squad_id,player_id' });
+            } catch (error) {
+              if (!(error instanceof FplApiError && error.code === 'picks_unavailable')) throw error;
             }
           }
 

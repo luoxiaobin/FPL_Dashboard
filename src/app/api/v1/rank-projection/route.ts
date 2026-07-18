@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getEntry, getEntryHistory, getLiveEvent, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,33 +9,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch bootstrap to get current GW and average scores
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!bootstrapRes.ok) throw new Error('Failed to fetch bootstrap');
-    const bootstrap = await bootstrapRes.json();
-
-    const currentGW = bootstrap.events.find((e: any) => e.is_current);
-    if (!currentGW) {
-      return NextResponse.json({ status: 'no_active_gw', message: 'No active gameweek right now.' });
-    }
+    const bootstrap = await getBootstrap();
+    const context = resolveGameweekContext(bootstrap.events);
+    const gameweek = context.currentGW ?? context.planningGW;
+    const currentGW = gameweek ? bootstrap.events.find((event: any) => event.id === gameweek) : null;
+    if (!currentGW || !gameweek) return NextResponse.json({ status: 'no_active_gw', message: 'No active gameweek right now.', season: context.seasonCode }, { status: 409 });
 
     const gwAverage = currentGW.average_entry_score || 0;
     const totalPlayers = bootstrap.total_players || 11000000;
 
-    // Fetch user's current live squad score
-    const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${currentGW.id}/live/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!liveRes.ok) throw new Error('Failed to fetch live data');
-    const liveData = await liveRes.json();
-
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW.id}/picks/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!picksRes.ok) throw new Error('Failed to fetch picks');
-    const picksData = await picksRes.json();
+    const [liveData, picksData] = await Promise.all([
+      getLiveEvent<{ elements?: Array<{ id: number; stats: Record<string, number> }> }>(gameweek),
+      getPicks(entryId, gameweek),
+    ]);
 
     // Calculate user's live total
     const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
@@ -44,21 +32,13 @@ export async function GET(req: NextRequest) {
       liveTotal += (stats.total_points || 0) * pick.multiplier;
     }
 
-    // Fetch user's overall rank before this GW
-    const entryRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    const entryData = entryRes.ok ? await entryRes.json() : {};
+    const entryData = await getEntry<Record<string, any>>(entryId);
     const currentOverallRank = entryData.summary_overall_rank || 0;
 
     const isFinal = currentGW.finished && currentGW.data_checked;
 
-    // Fetch user's history for accurate movement comparison
-    const historyRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    const historyData = await historyRes.json();
-    const lastGW = historyData.current.find((h: any) => h.event === currentGW.id - 1);
+    const historyData = await getEntryHistory<Record<string, any>>(entryId);
+    const lastGW = historyData.current?.find((h: any) => h.event === currentGW.id - 1);
     const prevRank = lastGW?.overall_rank || currentOverallRank;
 
     let projectedRank = currentOverallRank;
@@ -101,6 +81,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
+    if (error instanceof FplApiError) return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status: error.status });
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Rank Projection Error:', message);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

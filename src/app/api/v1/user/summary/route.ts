@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FplApiError, getBootstrap, getEntry, getEntryHistory } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,18 +10,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [entryRes, historyRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [data, history] = await Promise.all([
+      getEntry<Record<string, any>>(entryId),
+      getEntryHistory<Record<string, any>>(entryId),
     ]);
 
-    if (!entryRes.ok || !historyRes.ok) throw new Error('FPL API Error');
-
-    const data = await entryRes.json();
-    const history = await historyRes.json();
-
     // Determine current phase (GW 1-19 or GW 20-38)
-    const currentGW = data.current_event || 0;
+    const bootstrap = await getBootstrap();
+    const context = resolveGameweekContext(bootstrap.events);
+    const currentGW = context.currentGW ?? context.planningGW ?? data.current_event ?? 0;
     const isSecondHalf = currentGW >= 20;
     const phaseStart = isSecondHalf ? 20 : 1;
     const phaseEnd = isSecondHalf ? 38 : 19;
@@ -37,7 +36,7 @@ export async function GET(req: NextRequest) {
     const availableChips = allChips.filter(c => !usedInPhase.has(c));
 
     // Calculate Trend (compare current rank vs 3 GWs ago)
-    const currentGWs = history.current;
+    const currentGWs = (history.current as Array<{ overall_rank: number }> | undefined) || [];
     let trend = 'Stable';
     if (currentGWs.length >= 4) {
       const now = currentGWs[currentGWs.length - 1].overall_rank;
@@ -45,9 +44,6 @@ export async function GET(req: NextRequest) {
       if (now < then * 0.95) trend = 'Improving';
       else if (now > then * 1.05) trend = 'Declining';
     }
-
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const bootstrap = await bootstrapRes.json();
 
     return NextResponse.json({
       user_id: data.id,
@@ -60,9 +56,16 @@ export async function GET(req: NextRequest) {
       total_value: (data.last_deadline_value + (data.last_deadline_bank || 0)) / 10,
       available_chips: availableChips,
       trend: trend,
-      transfers_available: data.last_deadline_total_transfers || 0
+      transfers_available: data.last_deadline_total_transfers || 0,
+      season: context.seasonCode,
+      season_state: context.state,
+      current_gameweek: context.currentGW,
+      planning_gameweek: context.planningGW
     });
   } catch (error) {
+    if (error instanceof FplApiError) {
+      return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status: error.status });
+    }
     console.error('User Summary Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

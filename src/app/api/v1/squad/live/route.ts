@@ -1,26 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildClubFormMap } from '@/lib/clubForm';
-
-// Per-instance in-memory cache. In a distributed deployment each instance has its own copy;
-// this is best-effort latency reduction, not a shared cache.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let bootstrapCache: any = null;
-let lastFetchTime = 0;
-const CACHE_TTL_MS = 900_000; // 15 minutes
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getBootstrap(): Promise<any> {
-  const now = Date.now();
-  if (bootstrapCache && (now - lastFetchTime) < CACHE_TTL_MS) {
-    return bootstrapCache;
-  }
-  const res = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
-  if (res.ok) {
-    bootstrapCache = await res.json();
-    lastFetchTime = now;
-  }
-  return bootstrapCache;
-}
+import { FplApiError, getBootstrap, getFixtures, getLiveEvent, getPicks } from '@/lib/fpl/client';
+import { resolveGameweekContext } from '@/lib/fpl/gameweekContext';
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,40 +12,35 @@ export async function GET(req: NextRequest) {
     }
 
     const bootstrap = await getBootstrap();
-    if (!bootstrap) throw new Error('Failed to load bootstrap data');
+    const context = resolveGameweekContext(bootstrap.events);
+    const gameweek = context.picksGW;
 
-    const currentEvent = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events.find((e: any) => e.is_next);
-    const gameweek = currentEvent ? currentEvent.id : 1;
+    if (!gameweek) {
+      return NextResponse.json({
+        error: 'FPL gameweek data is not available yet.',
+        code: context.state,
+        season: context.seasonCode,
+        planning_gameweek: context.planningGW,
+      }, { status: 409 });
+    }
 
     // 1. Get Picks
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${gameweek}/picks/`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      }
-    });
-
-    if (!picksRes.ok) {
-      return NextResponse.json({ error: 'Failed to fetch picks' }, { status: picksRes.status });
-    }
-    const picksData = await picksRes.json();
+    const picksData = await getPicks(entryId, gameweek);
 
     // 2. Get Live Points and Fixtures
-    const [liveRes, fixturesRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/event/${gameweek}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/fixtures/?event=${gameweek}`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [liveData, fixturesData] = await Promise.all([
+      getLiveEvent<{ elements?: Array<{ id: number; stats: Record<string, number> }> }>(gameweek),
+      getFixtures(gameweek),
     ]);
-    
-    const liveData = liveRes.ok ? await liveRes.json() : { elements: [] };
-    const fixturesData = fixturesRes.ok ? await fixturesRes.json() : [];
 
     // Create lookup maps
-    const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
+    const liveMap = new Map(liveData.elements?.map((el) => [el.id, el.stats]) || []);
     const elementTypesMap = new Map(bootstrap.element_types.map((type: any) => [type.id, type.singular_name_short]));
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
     
     // Map teams to fixture finish status
     const teamFinishedMap = new Map<number, boolean>();
-    const finishedFixtures = fixturesData.filter((f: any) => f.finished || f.finished_provisional);
+    const finishedFixtures = (fixturesData as any[]).filter((f: any) => f.finished || f.finished_provisional);
     finishedFixtures.forEach((f: any) => {
       teamFinishedMap.set(f.team_h, true);
       teamFinishedMap.set(f.team_a, true);
@@ -143,6 +119,10 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
+    if (error instanceof FplApiError) {
+      const status = error.code === 'picks_unavailable' ? 409 : error.status;
+      return NextResponse.json({ error: error.message, code: error.code, path: error.path }, { status });
+    }
     console.error('Squad Live Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
