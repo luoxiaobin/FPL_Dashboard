@@ -76,6 +76,8 @@ Framed by the review as an operational/ToS risk, not a code vulnerability. Lowes
 
 ## Resuming this work
 
+**Model note:** use **Qwen3-Coder 30B-A3B (quantized)** as the local model for the remaining fixes, not the 27B model used for the original review/first fix pass. It's faster on this hardware and better suited to these smaller, well-scoped tasks (H3, M1, M3, M4, L1 are each 1-2 files, not a giant multi-file batch). Exception: for H3 specifically (Redis/KV rate limiter, must be Edge-runtime compatible), either double-check its output carefully or consider a stronger model — it's the one remaining item with real correctness nuance (e.g., must use a fetch/REST-based Redis client like Upstash's, not `ioredis`, which doesn't work on Vercel Edge).
+
 - The full original review write-up (complete text, all findings) is preserved in the local Claude Code session transcript: `~/.claude/projects/-Users-kevinluo/3d9f9b94-b73c-4c93-9d92-6d23e688468c.jsonl` on the Mac mini — search for `"# 🔒 Security Review"` if the raw text is ever needed again. This file is local-machine-only, not synced to the repo.
 - The working copy used for these fixes lives at `/tmp/FPL_Dashboard_security_review` on the Mac mini — **not a stable location**, may not survive a reboot. Worth cloning fresh (`git clone https://github.com/luoxiaobin/FPL_Dashboard.git`) into a permanent location for any future session.
 - To resume: pick H3 first (only open High-severity item) — needs the Vercel KV/Upstash decision above before code changes. M1/M3/M4/L1 can be tackled independently in any order.
