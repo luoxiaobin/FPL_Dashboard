@@ -21,6 +21,14 @@ export const supabase = createClient(
 );
 
 // Admin client — uses service_role key, BYPASSES RLS (server-side API routes ONLY, never expose to browser)
+// Fail closed in production: if the service-role key is absent, refuse to fall back to the anon key.
+if (process.env.NODE_ENV === 'production' && !supabaseServiceKey) {
+  console.error(
+    '[supabase] SUPABASE_SERVICE_ROLE_KEY is required in production. ' +
+    'Refusing to initialize admin client with anon key — all server-side DB operations will fail.'
+  );
+}
+
 export const supabaseAdmin = createClient(
   supabaseUrl ?? 'https://placeholder.supabase.co',
   supabaseServiceKey ?? supabaseAnonKey ?? 'placeholder-service-key',

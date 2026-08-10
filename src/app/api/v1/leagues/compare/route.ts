@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
+    const entryId = req.cookies.get('fpl_entry_id')?.value;
+    if (!entryId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const myId = searchParams.get('myId');
     const rivalId = searchParams.get('rivalId');
 
     if (!myId || !rivalId) {
       return NextResponse.json({ error: 'Missing entry IDs' }, { status: 400 });
+    }
+
+    // Ensure both IDs are numeric (prevent path traversal / SSRF-adjacent abuse)
+    if (!/^\d+$/.test(myId) || !/^\d+$/.test(rivalId)) {
+      return NextResponse.json({ error: 'Entry IDs must be numeric' }, { status: 400 });
     }
 
     // 1. Fetch Bootstrap (Player names/positions) & Live Points

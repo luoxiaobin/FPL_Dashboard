@@ -125,3 +125,15 @@ CREATE TABLE IF NOT EXISTS public.recommendation_logs (
 );
 
 ALTER TABLE public.recommendation_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS: Deny anonymous access to recommendation_logs.
+-- All writes go through the service-role admin client (bypasses RLS).
+-- These policies act as defense-in-depth if the anon key is ever exposed.
+DROP POLICY IF EXISTS "No anonymous access to recommendation_logs" ON public.recommendation_logs;
+CREATE POLICY "No anonymous access to recommendation_logs"
+  ON public.recommendation_logs FOR ALL USING (false);
+
+-- RLS: Deny anonymous access to user_preferences.
+DROP POLICY IF EXISTS "No anonymous access to user_preferences" ON public.user_preferences;
+CREATE POLICY "No anonymous access to user_preferences"
+  ON public.user_preferences FOR ALL USING (false);
