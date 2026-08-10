@@ -112,8 +112,8 @@ export async function GET(req: NextRequest) {
         send({ step: 'complete', message: `Sync complete! ${totalGWs} gameweeks synced.` });
 
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        send({ step: 'error', message });
+        console.error('Sync Error:', error);
+        send({ step: 'error', message: 'Sync failed. Please try again.' });
       } finally {
         controller.close();
       }

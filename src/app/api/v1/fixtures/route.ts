@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ gameweek: targetGW, players, nextGWs });
 
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Fixtures Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

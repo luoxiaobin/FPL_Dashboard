@@ -31,11 +31,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid response from FPL.' }, { status: 404 });
     }
 
+    // HTML-encode teamName before persisting — it originates from the external FPL API
+    // and is rendered elsewhere in the app, so it must not be trusted as-is.
+    const sanitize = (s: string) =>
+      s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c] as string));
+    const safeTeamName = sanitize(teamName ?? '');
+
     // Persist user profile to Supabase (upsert gracefully handles returning users)
     const { error: dbError } = await supabaseAdmin
       .from('users')
       .upsert(
-        { fpl_entry_id: entryId, team_name: teamName },
+        { fpl_entry_id: entryId, team_name: safeTeamName },
         { onConflict: 'fpl_entry_id' }
       );
 
@@ -52,6 +58,7 @@ export async function POST(req: NextRequest) {
       value: entryId.toString(),
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       path: '/',
       maxAge: 60 * 60 * 24 * 365 // 1 year
     });

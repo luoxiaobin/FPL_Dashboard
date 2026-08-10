@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing entryId or leagueId' }, { status: 400 });
     }
 
+    if (!/^\d+$/.test(leagueId)) {
+      return NextResponse.json({ error: 'Valid numeric leagueId required' }, { status: 400 });
+    }
+
     // 1. Fetch Bootstrap (GW info) & Live Points
     const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const bootstrap = await bootstrapRes.json();
