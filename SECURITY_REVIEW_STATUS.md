@@ -76,7 +76,24 @@ Framed by the review as an operational/ToS risk, not a code vulnerability. Lowes
 
 ## Resuming this work
 
-**Model note:** use **Qwen3-Coder 30B-A3B (quantized)** as the local model for the remaining fixes, not the 27B model used for the original review/first fix pass. It's faster on this hardware and better suited to these smaller, well-scoped tasks (H3, M1, M3, M4, L1 are each 1-2 files, not a giant multi-file batch). Exception: for H3 specifically (Redis/KV rate limiter, must be Edge-runtime compatible), either double-check its output carefully or consider a stronger model — it's the one remaining item with real correctness nuance (e.g., must use a fetch/REST-based Redis client like Upstash's, not `ioredis`, which doesn't work on Vercel Edge).
+**Model note:** use **Qwen3.6-35B-A3B (quantized, MoE — 35B total / ~3B active params per token)** as the local model for the remaining fixes, not the 27B dense model used for the original review/first fix pass. Set up as `qwen3.6-35b-a3b-32k` (custom Modelfile, `num_ctx 32768` — the base Ollama-library pull defaults to Ollama's small built-in context, which is not enough for agentic tool-schema overhead). Confirmed measured performance on this Mac mini M2 Pro / 32GB vs. the old 27B model's `--think=false` baseline:
+- Prefill: 85.58 tok/s (vs 37.21 tok/s) — ~2.3x faster
+- Generation: 37.46 tok/s (vs 10.40 tok/s) — ~3.6x faster
+
+**Update:** Hermes Agent hard-requires a minimum 64K context window — the 32K variant above was rejected at launch. Switched to a more aggressive quantization to keep 64K safely within memory: **`qwen3.6-35b-iq3-64k`**, built from `batiai/qwen3.6-35b:iq3` (IQ3_XXS, imatrix-calibrated) with `num_ctx 65536`. Reported weights size: 14GB (vs ~18GB at IQ4_XS).
+
+Confirmed via a genuine large-prompt stress test (~32.8K tokens, matching the original model's earlier test for direct comparison — note: run this test only once per session, since a second identical call hits KV-cache reuse and gives a misleadingly fast, non-representative number):
+- Original 27B dense model: 7m21s (441s) total, fresh prefill
+- Qwen3.6-35B-A3B IQ3 (64K): **1m52s (112s) total, fresh prefill** — ~3.9x faster end-to-end
+- Live prefill rate observed: 480-670 tok/s (vs ~46-92 tok/s on the original model)
+- Small-prompt generation rate: ~38-44 tok/s (vs ~10 tok/s on the original model, `--think=false`)
+- No memory errors in the server log at any point during setup or the large-context test — genuinely stable at 64K on this 32GB machine with this quantization.
+
+Memory: ~14GB weights (IQ3_XXS) + KV cache at 64K context — confirmed stable in practice, meaningfully safer margin than IQ4_XS would have given at the same context size. Do not go up to Q6_K quant (needs 36GB+) — no longer relevant now that 64K is required anyway.
+
+Harness: wired up via `ollama launch hermes --model qwen3.6-35b-iq3-64k` (Hermes Agent, a different local coding harness than Claude Code — confirm tool-calling actually works with a real test prompt before trusting it, not just a chat reply). Quality caveat: IQ3 is a more aggressive quantization than IQ4_XS — test on a low-stakes item (M1 or M4) before trusting it with H3, given H3 already needed extra scrutiny even at higher quantization.
+
+Exception: for H3 specifically (Redis/KV rate limiter, must be Edge-runtime compatible), either double-check its output carefully or consider a stronger model — it's the one remaining item with real correctness nuance (e.g., must use a fetch/REST-based Redis client like Upstash's, not `ioredis`, which doesn't work on Vercel Edge).
 
 - The full original review write-up (complete text, all findings) is preserved in the local Claude Code session transcript: `~/.claude/projects/-Users-kevinluo/3d9f9b94-b73c-4c93-9d92-6d23e688468c.jsonl` on the Mac mini — search for `"# 🔒 Security Review"` if the raw text is ever needed again. This file is local-machine-only, not synced to the repo.
 - The working copy used for these fixes lives at `/tmp/FPL_Dashboard_security_review` on the Mac mini — **not a stable location**, may not survive a reboot. Worth cloning fresh (`git clone https://github.com/luoxiaobin/FPL_Dashboard.git`) into a permanent location for any future session.
