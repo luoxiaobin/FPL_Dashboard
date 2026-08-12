@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
+    const rawEntryId = await getEntryIdFromSession(req);
 
-    if (!entryId) {
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // Leagues are available on the main entry endpoint
-    const res = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, {
+    const res = await fplFetch(`/api/entry/${entryId}/`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       }

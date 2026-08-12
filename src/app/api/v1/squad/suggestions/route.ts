@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // 1. Fetch Bootstrap (Global) and Picks (User)
     const [bootstrapRes, picksRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/1/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }), // Fallback GW1 if current not found
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/entry/${entryId}/event/1/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }), // Fallback GW1 if current not found
+      fplFetch('/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
     const bootstrap = await bootstrapRes.json();
     const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
     const currentGW = currentGWData.id;
-    
+
     // Logic: If current GW is finished, target the next one for suggestions
     const targetGW = (currentGWData.finished && currentGW < 38) ? currentGW + 1 : currentGW;
-    
+
     // Refetch picks for the GW we are looking at (if it's already active/finished)
     // For future GWs, use current squad picks as proxy
-    const actualPicksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW}/picks/`, {
+    const actualPicksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGW, 'gameweek')}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
     const picksData = await actualPicksRes.json();
@@ -29,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, t]));
     const userSquadIds = new Set(picksData.picks.map((p: any) => p.element));
-    
+
     // Map DGW/BGW Status for ALL teams for the targetGW
     const teamFixturesInTargetGW = new Map<number, any[]>();
     fixtures.forEach((f: any) => {
@@ -44,10 +47,10 @@ export async function GET(req: NextRequest) {
     // Determine the NEXT fixture for each team (for scoring)
     const teamNextFixture = new Map<number, any>();
     const sortedFixtures = [...fixtures].sort((a, b) => a.event - b.event);
-    
+
     for (const f of sortedFixtures) {
       if (f.finished || f.event < targetGW) continue;
-      
+
       if (!teamNextFixture.has(f.team_h)) {
         teamNextFixture.set(f.team_h, { opponent: f.team_a, difficulty: f.team_h_difficulty, home: true, gw: f.event });
       }
@@ -62,7 +65,7 @@ export async function GET(req: NextRequest) {
       const form = parseFloat(p.form) || 0;
       const fix = teamNextFixture.get(p.team);
       const difficulty = fix ? fix.difficulty : 3;
-      
+
       // Base score on Official Expected Points (EP)
       let score = (ep * 5.0) + (ict / 20.0) + (form * 0.5);
 
@@ -71,7 +74,7 @@ export async function GET(req: NextRequest) {
       if (p.element_type === 2) score -= 3.0; // Penalty for Captaining a Defender
       if (p.element_type === 4) score += 2.0; // Forward bonus
       if (p.element_type === 3) score += 1.5; // Midfielder bonus
-      
+
       return score;
     };
 
@@ -92,7 +95,7 @@ export async function GET(req: NextRequest) {
         if (teamScore < oppScore) return 'L';
         return 'D';
       }).reverse().join('');
-      
+
       clubFormMap.set(t.id, form);
     });
 
@@ -101,10 +104,10 @@ export async function GET(req: NextRequest) {
       const fix = teamNextFixture.get(p.team);
       const teamInfo = teamMap.get(p.team) as any;
       const oppInfo = teamMap.get(fix?.opponent) as any;
-      
+
       let targetFixtures: any[] = [];
       let multiFixtures: any[] = [];
-      
+
       try {
         targetFixtures = teamFixturesInTargetGW.get(p.team) || [];
         multiFixtures = targetFixtures.map(tf => {
@@ -123,7 +126,7 @@ export async function GET(req: NextRequest) {
         id: p.id,
         name: p.web_name || 'Unknown',
         team: teamInfo?.short_name || 'UNK',
-        ict: (parseFloat(p.ict_index || 0) / 10).toFixed(1), 
+        ict: (parseFloat(p.ict_index || 0) / 10).toFixed(1),
         form: p.form || '0.0',
         fdr: fix?.difficulty || 3,
         opponent: oppInfo?.short_name || 'UNK',
@@ -146,7 +149,7 @@ export async function GET(req: NextRequest) {
 
     // Dynamic Confidence Normalization
     const topScore = suggestions[0]?.score || 1;
-    
+
     const formattedSuggestions = suggestions.map((p: any, i: number) => {
       // Relative confidence compared to the #1 pick
       const confidence = Math.round((p.score / topScore) * 100);

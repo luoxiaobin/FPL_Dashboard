@@ -6,7 +6,7 @@
 
 A Fantasy Premier League analytics dashboard built with **Next.js 16**, **React 19**, **TypeScript**, **Supabase**, and **Tailwind CSS 4**. It proxies official FPL API data and reshapes it into specialised dashboard modules with optional Supabase persistence.
 
-**No authentication beyond a public FPL Team ID** — users log in with their numeric `entry_id` and the session is held in an HTTP-only cookie (`fpl_entry_id`).
+**No authentication beyond a public FPL Team ID** — users log in with their numeric `entry_id`. The server issues a random session token (`fpl_session` HTTP-only cookie) mapped to that entry ID via the `fpl_sessions` table (`src/lib/session.ts`); only a SHA-256 hash of the token is stored server-side, and all upstream FPL API calls are routed through `src/lib/upstreamFetch.ts`, which enforces a hardcoded-origin allowlist and validates every path-interpolated ID as numeric.
 
 ---
 

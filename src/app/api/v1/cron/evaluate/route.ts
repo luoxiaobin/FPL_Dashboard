@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(request: Request) {
   try {
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     let processedCount = 0;
 
     // 4. Check Gameweek Event Statuses
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       cache: 'no-store'
     });
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
       }
 
       // Fetch live points for this fully finished gameweek
-      const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${gw}/live/`, {
+      const liveRes = await fplFetch(`/api/event/${toSafeId(gw, 'gameweek')}/live/`, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         cache: 'no-store'
       });

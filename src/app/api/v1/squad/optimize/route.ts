@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function POST(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // 1. Fetch bootstrap to get current GW
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 
@@ -21,15 +24,15 @@ export async function POST(req: NextRequest) {
     const targetGW = (currentGWData.finished && currentGWData.id < 38) ? currentGWData.id + 1 : currentGWData.id;
 
     // 2. Fetch user's picks for current GW
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGWData.id}/picks/`, { 
-      headers: { 'User-Agent': 'Mozilla/5.0' } 
+    const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGWData.id, 'gameweek')}/picks/`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    
+
     if (!picksRes.ok) {
         return NextResponse.json({ error: 'Failed to fetch squad data' }, { status: 500 });
     }
     const picksData = await picksRes.json();
-    
+
     const userSquadIds = new Set(picksData.picks.map((p: any) => p.element));
     // Build sell-price map from picks (FPL depreciates sell price when a player rises in value)
     const sellPriceMap = new Map<number, number>(
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
 
         if (inPlayer) {
             const expectedGain = parseFloat(inPlayer.ep_next || '0') - parseFloat(outPlayer.ep_next || '0');
-            
+
             if (expectedGain > 0) {
                 const outTeam = teamMap.get(outPlayer.team) as { code: number; short_name: string } | undefined;
                 const inTeam  = teamMap.get(inPlayer.team)  as { code: number; short_name: string } | undefined;
@@ -94,11 +97,11 @@ export async function POST(req: NextRequest) {
             rationale: s.rationale,
             outcome: 'Pending'
         }));
-        
+
         const { error: insertError } = await supabaseAdmin
             .from('recommendation_logs')
             .insert(logsToInsert);
-            
+
         if (insertError) {
              console.error('Error logging recommendations:', insertError);
         }

@@ -1,17 +1,20 @@
 import { NextRequest } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const entryId = req.cookies.get('fpl_entry_id')?.value;
+  const rawEntryId = await getEntryIdFromSession(req);
   const fromParam = req.nextUrl.searchParams.get('from');
   const resumeFrom = fromParam ? parseInt(fromParam) : 0;
-  
-  if (!entryId) {
+
+  if (!rawEntryId) {
     return new Response('Unauthorized', { status: 401 });
   }
+  const entryId = toSafeId(rawEntryId, 'entryId');
 
   const encoder = new TextEncoder();
 
@@ -25,7 +28,7 @@ export async function GET(req: NextRequest) {
         // --- Step 1: Bootstrap (gameweeks + players) ---
         send({ step: 'bootstrap', message: 'Fetching FPL bootstrap data...' });
 
-        const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+        const bootstrapRes = await fplFetch('/api/bootstrap-static/', {
           headers: { 'User-Agent': 'Mozilla/5.0' },
         });
         if (!bootstrapRes.ok) throw new Error('Failed to fetch bootstrap data');
@@ -66,7 +69,7 @@ export async function GET(req: NextRequest) {
         const userId = userData.id;
 
         // --- Step 3: Squad history picks ---
-        const historyRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, {
+        const historyRes = await fplFetch(`/api/entry/${entryId}/history/`, {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         if (!historyRes.ok) throw new Error('Failed to fetch squad history');
@@ -89,7 +92,7 @@ export async function GET(req: NextRequest) {
             .single();
 
           if (squadData) {
-            const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${gw.event}/picks/`, {
+            const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(gw.event, 'gameweek')}/picks/`, {
               headers: { 'User-Agent': 'Mozilla/5.0' }
             });
             if (picksRes.ok) {

@@ -1,30 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
+    const rawEntryId = await getEntryIdFromSession(req);
     const { searchParams } = new URL(req.url);
-    const leagueId = searchParams.get('id');
+    const leagueIdParam = searchParams.get('id');
 
-    if (!entryId || !leagueId) {
+    if (!rawEntryId || !leagueIdParam) {
       return NextResponse.json({ error: 'Missing entryId or leagueId' }, { status: 400 });
     }
 
-    if (!/^\d+$/.test(leagueId)) {
+    let leagueId: string;
+    try {
+      leagueId = toSafeId(leagueIdParam, 'leagueId');
+    } catch {
       return NextResponse.json({ error: 'Valid numeric leagueId required' }, { status: 400 });
     }
 
     // 1. Fetch Bootstrap (GW info) & Live Points
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const bootstrap = await bootstrapRes.json();
     const currentGW = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events.find((e: any) => e.is_next);
-    
-    const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${currentGW.id}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+
+    const liveRes = await fplFetch(`/api/event/${toSafeId(currentGW.id, 'gameweek')}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const liveData = await liveRes.json();
     const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
 
     // 2. Fetch League Standings
-    const leagueRes = await fetch(`https://fantasy.premierleague.com/api/leagues-classic/${leagueId}/standings/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const leagueRes = await fplFetch(`/api/leagues-classic/${leagueId}/standings/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!leagueRes.ok) throw new Error('Failed to fetch league standings');
     const leagueData = await leagueRes.json();
 
@@ -34,7 +39,7 @@ export async function GET(req: NextRequest) {
     // 3. For each rival, fetch their live GW score
     const liveStandings = await Promise.all(rivals.map(async (rival: any) => {
       try {
-        const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${rival.entry}/event/${currentGW.id}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const picksRes = await fplFetch(`/api/entry/${toSafeId(rival.entry, 'entry')}/event/${toSafeId(currentGW.id, 'gameweek')}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         if (!picksRes.ok) throw new Error();
         const picksData = await picksRes.json();
 

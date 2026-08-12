@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { DEFAULT_SECTION_PREFERENCES, normalizeSectionPreferences } from '@/lib/sectionPreferences';
 import { extractPanelOrders, buildPanelOrderPayload } from '@/lib/panelOrder';
+import { getEntryIdFromSession } from '@/lib/session';
 
 const getUserIdFromCookie = async (req: NextRequest) => {
-  const entryId = req.cookies.get('fpl_entry_id')?.value;
-  if (!entryId || !/^\d+$/.test(entryId)) return null;
+  const entryId = await getEntryIdFromSession(req);
+  if (!entryId) return null;
 
   const { data: user } = await supabaseAdmin
     .from('users')

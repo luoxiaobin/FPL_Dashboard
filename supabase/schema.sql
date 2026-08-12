@@ -137,3 +137,24 @@ CREATE POLICY "No anonymous access to recommendation_logs"
 DROP POLICY IF EXISTS "No anonymous access to user_preferences" ON public.user_preferences;
 CREATE POLICY "No anonymous access to user_preferences"
   ON public.user_preferences FOR ALL USING (false);
+
+-- 10. Create Sessions table (H1 fix: random session token mapped to an entry ID,
+-- instead of storing the raw FPL entry ID directly in the client's cookie).
+-- Only a SHA-256 hash of the token is stored — see supabase/migrations/001_create_sessions_table.sql
+-- for the full rationale.
+CREATE TABLE IF NOT EXISTS public.fpl_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_hash TEXT UNIQUE NOT NULL,
+  fpl_entry_id BIGINT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  revoked_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_fpl_sessions_token_hash ON public.fpl_sessions (token_hash);
+
+ALTER TABLE public.fpl_sessions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Deny anonymous access to sessions" ON public.fpl_sessions;
+CREATE POLICY "Deny anonymous access to sessions"
+  ON public.fpl_sessions FOR ALL USING (false);

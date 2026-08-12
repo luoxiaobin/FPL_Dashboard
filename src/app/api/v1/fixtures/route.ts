@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildClubFormMap } from '@/lib/clubForm';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // Fetch bootstrap (players, teams, fixtures)
     const [bootstrapRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch('/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
     ]);
 
     if (!bootstrapRes.ok || !fixturesRes.ok) throw new Error('Failed to fetch FPL data');
@@ -34,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     // Group fixtures by team: teamId -> [{gw, opponent, difficulty, home}]
     const fixturesByTeam = new Map<number, Array<{ gw: number; opponent: string; difficulty: number; home: boolean; isDGW?: boolean; secondaryOpponent?: string }>>();
-    
+
     // Count matches per team per event to detect DGW
     const matchCount = new Map<string, number>(); // "teamId-event" -> count
     upcomingFixtures.forEach((f: any) => {
@@ -52,30 +55,30 @@ export async function GET(req: NextRequest) {
 
       const awayInfo: any = teamMap.get(awayTeam);
       const homeInfo: any = teamMap.get(homeTeam);
-      
+
       const homeIsDGW = matchCount.get(`${homeTeam}-${fix.event}`)! > 1;
       const awayIsDGW = matchCount.get(`${awayTeam}-${fix.event}`)! > 1;
 
-      // For DGW, we might push two entries or one with a flag. 
+      // For DGW, we might push two entries or one with a flag.
       // The current ticker expects one cell per GW, so let's handle DGW by flagging it.
-      fixturesByTeam.get(homeTeam)?.push({ 
-        gw: fix.event, 
-        opponent: awayInfo?.short || '?', 
-        difficulty: fix.team_h_difficulty, 
+      fixturesByTeam.get(homeTeam)?.push({
+        gw: fix.event,
+        opponent: awayInfo?.short || '?',
+        difficulty: fix.team_h_difficulty,
         home: true,
         isDGW: homeIsDGW
       });
-      fixturesByTeam.get(awayTeam)?.push({ 
-        gw: fix.event, 
-        opponent: homeInfo?.short || '?', 
-        difficulty: fix.team_a_difficulty, 
+      fixturesByTeam.get(awayTeam)?.push({
+        gw: fix.event,
+        opponent: homeInfo?.short || '?',
+        difficulty: fix.team_a_difficulty,
         home: false,
         isDGW: awayIsDGW
       });
     }
 
     // Get user's current squad picks
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW}/picks/`, {
+    const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGW, 'gameweek')}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
     if (!picksRes.ok) throw new Error('Failed to fetch picks');

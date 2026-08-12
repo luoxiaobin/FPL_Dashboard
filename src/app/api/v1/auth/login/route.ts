@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createSession, setSessionCookie } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ping the public FPL entry endpoint to ensure this team ID actually exists
-    const meRes = await fetch(`https://fantasy.premierleague.com/api/entry/${teamId}/`, {
+    const meRes = await fplFetch(`/api/entry/${toSafeId(teamId, 'teamId')}/`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       }
@@ -50,18 +52,12 @@ export async function POST(req: NextRequest) {
       console.error('Supabase upsert error:', dbError.message);
     }
 
-    const response = NextResponse.json({ success: true, entryId });
+    // H1 fix: issue a random session token mapped to the entry ID server-side,
+    // rather than handing the client a cookie containing the raw entry ID.
+    const token = await createSession(entryId);
 
-    // Store purely the public entry_id in a secure cookie
-    response.cookies.set({
-      name: 'fpl_entry_id',
-      value: entryId.toString(),
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
-    });
+    const response = NextResponse.json({ success: true, entryId });
+    setSessionCookie(response, token);
 
     return response;
 

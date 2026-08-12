@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // Fetch bootstrap to get current GW and average scores
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', {
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
     if (!bootstrapRes.ok) throw new Error('Failed to fetch bootstrap');
@@ -23,13 +26,13 @@ export async function GET(req: NextRequest) {
     const totalPlayers = bootstrap.total_players || 11000000;
 
     // Fetch user's current live squad score
-    const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${currentGW.id}/live/`, {
+    const liveRes = await fplFetch(`/api/event/${toSafeId(currentGW.id, 'gameweek')}/live/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
     if (!liveRes.ok) throw new Error('Failed to fetch live data');
     const liveData = await liveRes.json();
 
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${currentGW.id}/picks/`, {
+    const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGW.id, 'gameweek')}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
     if (!picksRes.ok) throw new Error('Failed to fetch picks');
@@ -45,7 +48,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch user's overall rank before this GW
-    const entryRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, {
+    const entryRes = await fplFetch(`/api/entry/${entryId}/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
     const entryData = entryRes.ok ? await entryRes.json() : {};
@@ -54,7 +57,7 @@ export async function GET(req: NextRequest) {
     const isFinal = currentGW.finished && currentGW.data_checked;
 
     // Fetch user's history for accurate movement comparison
-    const historyRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, {
+    const historyRes = await fplFetch(`/api/entry/${entryId}/history/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
     const historyData = await historyRes.json();
@@ -83,7 +86,7 @@ export async function GET(req: NextRequest) {
     const tiers = [1, 100, 1000, 10000, 50000, 100000, 250000, 500000, 1000000, 2000000, 5000000];
     const displayRank = isFinal ? currentOverallRank : projectedRank;
     const nextTier = tiers.find(t => t < displayRank) || 1;
-    const ranksPerPoint = currentOverallRank < 100000 ? 1200 : 5000; 
+    const ranksPerPoint = currentOverallRank < 100000 ? 1200 : 5000;
     const pointsToNextTier = Math.ceil(Math.abs(displayRank - nextTier) / ranksPerPoint);
 
     return NextResponse.json({

@@ -1,38 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
-    const myId = searchParams.get('myId');
-    const rivalId = searchParams.get('rivalId');
+    const myIdParam = searchParams.get('myId');
+    const rivalIdParam = searchParams.get('rivalId');
 
-    if (!myId || !rivalId) {
+    if (!myIdParam || !rivalIdParam) {
       return NextResponse.json({ error: 'Missing entry IDs' }, { status: 400 });
     }
 
     // Ensure both IDs are numeric (prevent path traversal / SSRF-adjacent abuse)
-    if (!/^\d+$/.test(myId) || !/^\d+$/.test(rivalId)) {
+    let myId: string;
+    let rivalId: string;
+    try {
+      myId = toSafeId(myIdParam, 'myId');
+      rivalId = toSafeId(rivalIdParam, 'rivalId');
+    } catch {
       return NextResponse.json({ error: 'Entry IDs must be numeric' }, { status: 400 });
     }
 
     // 1. Fetch Bootstrap (Player names/positions) & Live Points
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const bootstrap = await bootstrapRes.json();
     const currentGW = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events.find((e: any) => e.is_next);
-    
-    const liveRes = await fetch(`https://fantasy.premierleague.com/api/event/${currentGW.id}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+
+    const liveRes = await fplFetch(`/api/event/${toSafeId(currentGW.id, 'gameweek')}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const liveData = await liveRes.json();
     const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
 
     // 2. Fetch Picks for both
     const [myPicksRes, rivalPicksRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${myId}/event/${currentGW.id}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${rivalId}/event/${currentGW.id}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch(`/api/entry/${myId}/event/${toSafeId(currentGW.id, 'gameweek')}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/entry/${rivalId}/event/${toSafeId(currentGW.id, 'gameweek')}/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
     if (!myPicksRes.ok || !rivalPicksRes.ok) throw new Error('Failed to fetch picks');

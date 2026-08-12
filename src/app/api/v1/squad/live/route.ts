@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildClubFormMap } from '@/lib/clubForm';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 // Per-instance in-memory cache. In a distributed deployment each instance has its own copy;
 // this is best-effort latency reduction, not a shared cache.
@@ -14,7 +16,7 @@ async function getBootstrap(): Promise<any> {
   if (bootstrapCache && (now - lastFetchTime) < CACHE_TTL_MS) {
     return bootstrapCache;
   }
-  const res = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
+  const res = await fplFetch('/api/bootstrap-static/');
   if (res.ok) {
     bootstrapCache = await res.json();
     lastFetchTime = now;
@@ -24,11 +26,11 @@ async function getBootstrap(): Promise<any> {
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     const bootstrap = await getBootstrap();
     if (!bootstrap) throw new Error('Failed to load bootstrap data');
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
     const gameweek = currentEvent ? currentEvent.id : 1;
 
     // 1. Get Picks
-    const picksRes = await fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/event/${gameweek}/picks/`, {
+    const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(gameweek, 'gameweek')}/picks/`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
       }
@@ -50,10 +52,10 @@ export async function GET(req: NextRequest) {
 
     // 2. Get Live Points and Fixtures
     const [liveRes, fixturesRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/event/${gameweek}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/fixtures/?event=${gameweek}`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch(`/api/event/${toSafeId(gameweek, 'gameweek')}/live/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/fixtures/?event=${toSafeId(gameweek, 'gameweek')}`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
-    
+
     const liveData = liveRes.ok ? await liveRes.json() : { elements: [] };
     const fixturesData = fixturesRes.ok ? await fixturesRes.json() : [];
 
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
     const liveMap = new Map(liveData.elements?.map((el: any) => [el.id, el.stats]) || []);
     const elementTypesMap = new Map(bootstrap.element_types.map((type: any) => [type.id, type.singular_name_short]));
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));
-    
+
     // Map teams to fixture finish status
     const teamFinishedMap = new Map<number, boolean>();
     const finishedFixtures = fixturesData.filter((f: any) => f.finished || f.finished_provisional);
@@ -106,7 +108,7 @@ export async function GET(req: NextRequest) {
     const starters = players.filter((p: any) => p.was_started);
     const bench = players.filter((p: any) => !p.was_started);
     const missingStarters = starters.filter((p: any) => p.minutes === 0 && p.is_finished);
-    
+
     let subPoints = 0;
     const availableBench = [...bench];
     missingStarters.forEach(() => {
@@ -125,7 +127,7 @@ export async function GET(req: NextRequest) {
     // 5. Determine Point Lifecycle Status
     let status: 'live' | 'provisional' | 'official' = 'live';
     const eventStatus = bootstrap.events.find((e: any) => e.id === gameweek);
-    
+
     if (eventStatus?.finished && eventStatus?.data_checked) {
       status = 'official';
     } else {

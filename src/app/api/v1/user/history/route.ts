@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     const [historyRes, bootstrapRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/bootstrap-static/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch(`/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/bootstrap-static/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
     if (!historyRes.ok || !bootstrapRes.ok) {

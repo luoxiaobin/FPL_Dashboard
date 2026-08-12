@@ -1,35 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     // 1. Fetch Transfer History, Chips, and Entry History
     const [transRes, historyRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/transfers/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch(`/api/entry/${entryId}/transfers/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
     if (!transRes.ok || !historyRes.ok) throw new Error('Failed to fetch FPL history');
     const transfers = await transRes.json();
     const history = await historyRes.json();
-    
+
     const chipsMap = new Map(history.chips?.map((c: any) => [c.event, c.name]));
     const hitsMap = new Map(history.current?.map((h: any) => [h.event, h.event_transfers_cost]));
 
     // 2. Fetch Bootstrap and Fixtures
     const [bootstrapRes, fixturesRes] = await Promise.all([
-      fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch('https://fantasy.premierleague.com/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch('/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
     const [bootstrap, allFixtures] = await Promise.all([bootstrapRes.json(), fixturesRes.json()]);
-    
+
     const playersMap = new Map(bootstrap.elements.map((p: any) => [p.id, p]));
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, { name: t.name, short: t.short_name }]));
-    
+
     // Find next GWs for fixture ticker
     const currentGW = bootstrap.events.find((e: any) => e.is_current)?.id || 1;
     const nextGWs = [currentGW, currentGW + 1, currentGW + 2, currentGW + 3].filter(gw => gw <= 38);
@@ -38,16 +41,16 @@ export async function GET(req: NextRequest) {
     const fixturesByTeam = new Map<number, any[]>();
     for (const fix of allFixtures) {
       if (!fix.event || !nextGWs.includes(fix.event)) continue;
-      
+
       const homeTeam = fix.team_h;
       const awayTeam = fix.team_a;
-      
+
       if (!fixturesByTeam.has(homeTeam)) fixturesByTeam.set(homeTeam, []);
       if (!fixturesByTeam.has(awayTeam)) fixturesByTeam.set(awayTeam, []);
-      
+
       const homeInfo = teamMap.get(homeTeam) as any;
       const awayInfo = teamMap.get(awayTeam) as any;
-      
+
       fixturesByTeam.get(homeTeam)?.push({ gw: fix.event, opponent: awayInfo?.short, difficulty: fix.team_h_difficulty, home: true });
       fixturesByTeam.get(awayTeam)?.push({ gw: fix.event, opponent: homeInfo?.short, difficulty: fix.team_a_difficulty, home: false });
     }
@@ -57,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     const getPlayerPointsInGW = async (playerId: number, gw: number) => {
       if (!summaryCache.has(playerId)) {
-        const res = await fetch(`https://fantasy.premierleague.com/api/element-summary/${playerId}/`, {
+        const res = await fplFetch(`/api/element-summary/${toSafeId(playerId, 'playerId')}/`, {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         if (res.ok) summaryCache.set(playerId, await res.json());
@@ -78,7 +81,7 @@ export async function GET(req: NextRequest) {
       ]);
 
       const getFix = (tag: number) => (fixturesByTeam.get(tag) || []).sort((a, b) => a.gw - b.gw).slice(0, 3);
-      
+
       return {
         id: `${t.entry}-${t.time}`,
         gw: t.event,

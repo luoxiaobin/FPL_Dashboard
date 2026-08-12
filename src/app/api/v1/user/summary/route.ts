@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEntryIdFromSession } from '@/lib/session';
+import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function GET(req: NextRequest) {
   try {
-    const entryId = req.cookies.get('fpl_entry_id')?.value;
-
-    if (!entryId) {
+    const rawEntryId = await getEntryIdFromSession(req);
+    if (!rawEntryId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const entryId = toSafeId(rawEntryId, 'entryId');
 
     const [entryRes, historyRes] = await Promise.all([
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fetch(`https://fantasy.premierleague.com/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      fplFetch(`/api/entry/${entryId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+      fplFetch(`/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
     if (!entryRes.ok || !historyRes.ok) throw new Error('FPL API Error');
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Standard FPL chip names
     const allChips = ['bboost', '3xc', 'wildcard', 'freehit'];
-    
+
     // Filter used chips to only those used in the CURRENT phase
     const usedInPhase = new Set<string>(
       (history.chips as Array<{ event: number; name: string }> || [])
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
       else if (now > then * 1.05) trend = 'Declining';
     }
 
-    const bootstrapRes = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const bootstrapRes = await fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const bootstrap = await bootstrapRes.json();
 
     return NextResponse.json({

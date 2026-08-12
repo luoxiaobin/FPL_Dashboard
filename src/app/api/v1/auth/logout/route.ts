@@ -1,18 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { revokeSession, clearSessionCookie } from '@/lib/session';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  // H1 fix: revoke the session server-side (not just clear the cookie), so a
+  // copy of the token captured before logout can't still be replayed.
+  await revokeSession(req);
+
   const response = NextResponse.json({ success: true });
-  
-  // Clear the fpl_entry_id cookie
-  response.cookies.set({
-    name: 'fpl_entry_id',
-    value: '',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 0 // Expire instantly
-  });
+  clearSessionCookie(response);
 
   return response;
 }
