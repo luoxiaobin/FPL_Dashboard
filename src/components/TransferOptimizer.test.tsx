@@ -19,7 +19,14 @@ const mockSuggestions = [
   },
 ];
 
-function mockFetch(suggestions = mockSuggestions) {
+type MockSuggestion = Omit<(typeof mockSuggestions)[number], 'out_team_code' | 'in_team_code' | 'out_club' | 'in_club'> & {
+  out_team_code?: number;
+  in_team_code?: number;
+  out_club?: string;
+  in_club?: string;
+};
+
+function mockFetch(suggestions: MockSuggestion[] = mockSuggestions) {
   vi.spyOn(global, 'fetch').mockResolvedValue({
     ok: true,
     json: () => Promise.resolve({ suggestions }),

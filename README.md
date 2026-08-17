@@ -123,6 +123,18 @@ npm run dev
 
 Open the app at `http://localhost:3000`.
 
+### Planning workspace preview
+
+The scenario-based redesign is available at `/planning` in development. In production it is fail-closed behind:
+
+```text
+PLANNING_WORKSPACE_V1=true
+```
+
+The first vertical slice generates Floor, Balanced, and Upside five-Gameweek plans from a public squad after its picks become available. See [the V1 product specification](docs/redesign/PRODUCT_SPEC.md), [target architecture](docs/redesign/TARGET_ARCHITECTURE.md), and the additive migration in `supabase/migrations/`.
+
+`/api/v1/health` reports deployment configuration and official FPL upstream readiness. A degraded response is HTTP 503 by design.
+
 Production deployment:
 
 https://fpl-dashboard-seven-pi.vercel.app/
@@ -158,4 +170,3 @@ Near-term areas worth expanding:
 The application is beyond MVP and already includes live tracking, planning, and historical analysis features suitable for early user promotion and feedback.
 
 Built for FPL managers who want one dashboard for live decisions, weekly planning, and season context.
-
