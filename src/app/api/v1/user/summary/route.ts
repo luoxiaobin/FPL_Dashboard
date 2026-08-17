@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEntryIdFromSession } from '@/lib/session';
-import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
+import { toSafeId } from '@/lib/upstreamFetch';
+import { fetchFplJson } from '@/server/fpl/client';
+
+interface EntrySummary {
+  id: number;
+  player_first_name?: string;
+  player_last_name?: string;
+  name: string;
+  current_event?: number;
+  summary_overall_rank?: number;
+  summary_overall_points?: number;
+  last_deadline_bank?: number;
+  last_deadline_value?: number;
+  last_deadline_total_transfers?: number;
+}
+
+interface EntryHistory {
+  chips?: Array<{ event: number; name: string }>;
+  current: Array<{ overall_rank: number }>;
+}
+
+interface BootstrapSummary {
+  total_players?: number;
+  events: Array<{ id: number; is_current: boolean; finished: boolean }>;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,15 +34,11 @@ export async function GET(req: NextRequest) {
     }
     const entryId = toSafeId(rawEntryId, 'entryId');
 
-    const [entryRes, historyRes] = await Promise.all([
-      fplFetch(`/api/entry/${entryId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fplFetch(`/api/entry/${entryId}/history/`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    const [data, history, bootstrap] = await Promise.all([
+      fetchFplJson<EntrySummary>(`/api/entry/${entryId}/`),
+      fetchFplJson<EntryHistory>(`/api/entry/${entryId}/history/`),
+      fetchFplJson<BootstrapSummary>('/api/bootstrap-static/', { cacheSeconds: 300 }),
     ]);
-
-    if (!entryRes.ok || !historyRes.ok) throw new Error('FPL API Error');
-
-    const data = await entryRes.json();
-    const history = await historyRes.json();
 
     // Determine current phase (GW 1-19 or GW 20-38)
     const currentGW = data.current_event || 0;
@@ -31,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     // Filter used chips to only those used in the CURRENT phase
     const usedInPhase = new Set<string>(
-      (history.chips as Array<{ event: number; name: string }> || [])
+      (history.chips || [])
         .filter(c => c.event >= phaseStart && c.event <= phaseEnd)
         .map(c => c.name)
     );
@@ -48,8 +68,8 @@ export async function GET(req: NextRequest) {
       else if (now > then * 1.05) trend = 'Declining';
     }
 
-    const bootstrapRes = await fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const bootstrap = await bootstrapRes.json();
+    const currentEvent = bootstrap.events.find(event => event.is_current);
+    const currentEventStatus = currentEvent && !currentEvent.finished ? 'live' : 'planning';
 
     return NextResponse.json({
       user_id: data.id,
@@ -59,10 +79,11 @@ export async function GET(req: NextRequest) {
       total_points: data.summary_overall_points || 0,
       total_players: bootstrap.total_players || 11000000,
       bank_balance: (data.last_deadline_bank || 0) / 10,
-      total_value: (data.last_deadline_value + (data.last_deadline_bank || 0)) / 10,
+      total_value: ((data.last_deadline_value || 0) + (data.last_deadline_bank || 0)) / 10,
       available_chips: availableChips,
       trend: trend,
-      transfers_available: data.last_deadline_total_transfers || 0
+      transfers_available: data.last_deadline_total_transfers || 0,
+      current_event_status: currentEventStatus,
     });
   } catch (error) {
     console.error('User Summary Error:', error);
