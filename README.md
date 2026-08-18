@@ -142,7 +142,7 @@ npm run test:smoke
 ```
 
 Set `SMOKE_BASE_URL` to test another deployment. The smoke test verifies health, the Planning feature flag, unauthenticated API protection, and security headers without creating a session or changing production data.
-GitHub Actions also runs this check every six hours and supports manual runs against a supplied deployment URL.
+GitHub Actions also runs this check hourly and supports manual runs against a supplied deployment URL.
 
 Production deployment:
 
@@ -161,6 +161,9 @@ npm run test:smoke
 
 ## Documentation
 
+- [Playwright testing handbook](docs/testing/PLAYWRIGHT_HANDBOOK.md) — testing purpose, architecture, coverage, security, CI, failure diagnosis, and extension guide
+- [Testing and documentation governance](docs/testing/TESTING_GOVERNANCE.md) — how features, bugs, experiments, and removals keep tests and documentation current
+- [Testing documentation index](docs/testing/README.md) — strategy, live integration, authentication setup, and pilot records
 - [RequirementTechSpec.md](RequirementTechSpec.md) — product requirements and technical specification
 - [implementation_plan.md](implementation_plan.md) — original implementation plan
 - [PRODUCT_OVERVIEW.md](PRODUCT_OVERVIEW.md) — audience, value proposition, and feature narrative

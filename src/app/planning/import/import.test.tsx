@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { encodeFplSquadImport, type FplSquadImport } from '@/lib/fplSquadImport';
 import FplSquadImportPage from './page';
-import { readConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 afterEach(() => {
   cleanup();
@@ -58,7 +57,9 @@ describe('FPL squad import setup', () => {
     expect(await screen.findByText('Player 1')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm and save squad' }));
     expect(await screen.findByText('Squad saved for Planning')).toBeTruthy();
-    expect(readConfirmedFplSquad()?.entryId).toBe(3_376_378);
+    const saveRequest = (fetch as ReturnType<typeof vi.fn>).mock.calls.find(([input]) => String(input).includes('/api/v1/planning/import'));
+    expect(JSON.parse(String(saveRequest?.[1]?.body)).importedSquad.entryId).toBe(3_376_378);
+    expect(sessionStorage.length).toBe(0);
     expect(screen.getByRole('link', { name: /Continue to Planning/ })).toBeTruthy();
   });
 });

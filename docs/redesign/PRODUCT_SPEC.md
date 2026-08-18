@@ -37,7 +37,7 @@ Squad legality, chip availability, free transfers, budget, selling prices, and f
 
 Included: Team ID import, season-aware squad, versioned projections, three scenarios, four constraints, comparison, evidence, My Plan snapshot, responsive layout, freshness and confidence.
 
-Deferred: rival optimization, live-rank projection, a full live command centre, external projection providers, editable model weights, price prediction, sharing, and automatic FPL actions.
+Deferred: rival optimization, live-rank projection, a full live command centre, external projection providers, editable model weights, price prediction, sharing, and automatic FPL actions. Pre-deadline current-squad access is provided through a user-invoked, read-only bookmarklet; applying recommendations remains an explicit action in the official FPL interface.
 
 ## Success measures
 
@@ -58,4 +58,3 @@ Overall-rank movement is a long-term outcome measure, not a release gate.
 - explicit stale and upstream-error states
 - full mobile planning workflow
 - legacy-dashboard rollback through a feature flag
-

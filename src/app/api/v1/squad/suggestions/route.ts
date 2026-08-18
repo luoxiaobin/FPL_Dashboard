@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEntryIdFromSession } from '@/lib/session';
 import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
+import { resolveRelevantGameweek, squadUnpublishedPayload } from '@/lib/fplAvailability';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,14 +10,15 @@ export async function GET(req: NextRequest) {
     const entryId = toSafeId(rawEntryId, 'entryId');
 
     // 1. Fetch Bootstrap (Global) and Picks (User)
-    const [bootstrapRes, picksRes, fixturesRes] = await Promise.all([
+    const [bootstrapRes, fixturesRes] = await Promise.all([
       fplFetch('/api/bootstrap-static/', { headers: { 'User-Agent': 'Mozilla/5.0' } }),
-      fplFetch(`/api/entry/${entryId}/event/1/picks/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }), // Fallback GW1 if current not found
       fplFetch('/api/fixtures/', { headers: { 'User-Agent': 'Mozilla/5.0' } })
     ]);
 
+    if (!bootstrapRes.ok || !fixturesRes.ok) throw new Error('Failed to fetch FPL data');
     const bootstrap = await bootstrapRes.json();
-    const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
+    const currentGWData = resolveRelevantGameweek(bootstrap.events);
+    if (!currentGWData) return NextResponse.json({ error: 'No gameweek available' }, { status: 404 });
     const currentGW = currentGWData.id;
 
     // Logic: If current GW is finished, target the next one for suggestions
@@ -27,6 +29,16 @@ export async function GET(req: NextRequest) {
     const actualPicksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGW, 'gameweek')}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
+    if (actualPicksRes.status === 404 && currentGWData.is_next) {
+      return NextResponse.json({
+        ...squadUnpublishedPayload(currentGWData),
+        activeGW: null,
+        targetGW,
+        suggestions: [],
+        transferTarget: null,
+      });
+    }
+    if (!actualPicksRes.ok) throw new Error(`Failed to fetch picks (${actualPicksRes.status})`);
     const picksData = await actualPicksRes.json();
     const fixtures = await fixturesRes.json();
 

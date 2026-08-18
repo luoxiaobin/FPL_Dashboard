@@ -23,6 +23,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Reject tracked Playwright authentication state
+      run: |
+        test -z "$(git ls-files playwright/.auth)"
+        git check-ignore -q playwright/.auth/fpl.json
+
     - name: Run Linter
       run: npm run lint
 

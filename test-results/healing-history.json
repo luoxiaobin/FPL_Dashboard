@@ -1,0 +1,13 @@
+[
+  {
+    "test": "Controlled authenticated dashboard > renders the manager summary and complete 15-player squad",
+    "timestamp": "2026-08-18T22:54:15Z",
+    "classification": "LOCATOR_DRIFT",
+    "failure": "The test requested a heading named Bench while the accessible level-3 heading remained Substitutes.",
+    "oldLocator": "page.getByRole('heading', { name: 'Bench' })",
+    "newLocator": "page.getByRole('heading', { name: 'Substitutes' })",
+    "repair": "Restored the semantic heading locator only; production code, fixtures, assertions, and timeouts were unchanged.",
+    "rerunResult": "passed",
+    "confidence": "high"
+  }
+]
