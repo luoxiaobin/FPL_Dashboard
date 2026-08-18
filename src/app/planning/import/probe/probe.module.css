@@ -1,0 +1,18 @@
+.page { min-height: 100vh; padding: 32px; color: #edf7f0; background: #07110d; }
+.card { max-width: 760px; margin: 5vh auto; padding: 28px; border: 1px solid #1c3529; border-radius: 20px; background: #0b1912; }
+.eyebrow { color: #62d98b; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.card h1 { margin: 6px 0 12px; font-size: clamp(2rem, 6vw, 3.5rem); letter-spacing: -.04em; }
+.intro, .steps, .success p { color: #a8b9ae; line-height: 1.6; }
+.steps { display: grid; gap: 10px; padding-left: 22px; }
+.primary { min-height: 48px; margin: 18px 0; padding: 12px 18px; border: 0; border-radius: 10px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
+.primary:disabled { cursor: wait; opacity: .6; }
+.card details { margin-top: 8px; color: #91a89a; }
+.card textarea { width: 100%; margin-top: 10px; padding: 12px; border: 1px solid #2a4637; border-radius: 10px; color: #d9efe0; background: #07110d; font-family: monospace; overflow-wrap: anywhere; }
+.success { margin-top: 22px; padding: 20px; border: 1px solid #2d6844; border-radius: 14px; background: #0c2115; }
+.success h2 { margin-top: 0; color: #62d98b; }
+.success dl { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.success dl div { padding: 12px; border-radius: 10px; background: #07110d; }
+.success dt { color: #82998b; font-size: .75rem; }
+.success dd { margin: 4px 0 0; font-size: 1.1rem; font-weight: 700; }
+.error { padding: 12px; border: 1px solid #8b3a3a; border-radius: 10px; color: #ffb4b4; background: #2b1010; }
+@media (max-width: 560px) { .page { padding: 16px; } .card { margin: 0; padding: 20px; } .success dl { grid-template-columns: 1fr; } }

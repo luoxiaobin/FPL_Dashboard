@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.2",
+    "date": "2026-08-18",
+    "title": "FPL Import Feasibility Probe",
+    "changes": [
+      "Copies a Safari-compatible bookmarklet from a dedicated diagnostic page.",
+      "Reads only a minimal team summary from FPL's authenticated endpoints.",
+      "Returns data in the URL fragment, clears it immediately, and persists nothing."
+    ]
+  },
+  {
     "version": "0.6.1",
     "date": "2026-08-17",
     "title": "Mobile Launch Readiness",
