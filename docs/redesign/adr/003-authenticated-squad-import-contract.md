@@ -29,3 +29,9 @@ Prices remain in FPL's integer tenths representation at this boundary. Conversio
 ## Phase 4 integration
 
 After explicit review, the encoded contract may be retained in `sessionStorage` for the current tab only. The authenticated planning endpoint parses the contract again, requires its entry ID to match the server session, rejects captures older than two hours, verifies all players against current bootstrap data, and enforces squad composition, club limits, and starting-formation rules. Only then may the imported picks replace the unavailable public picks response for scenario generation. Unlimited pre-season transfers are modeled without points hits. No durable storage is introduced by this phase.
+
+## Phase 5 lifecycle
+
+After confirmation, the validated contract is stored server-side against the authenticated FPL entry. A later confirmed import replaces the previous one, and the manager can explicitly clear it. The stored fallback expires two hours after the applicable Gameweek deadline; the grace period covers delayed public endpoint availability without treating old picks as current.
+
+Planning always requests the official public Gameweek picks first. A confirmed import is used only while that endpoint returns not found, so the public FPL record becomes authoritative automatically after the deadline. Row-level security blocks anonymous database access, while the application service role performs all reads and writes behind the existing manager session.

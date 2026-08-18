@@ -20,6 +20,8 @@ export default function FplSquadImportPage() {
   const [copied, setCopied] = useState(false);
   const [review, setReview] = useState<FplSquadReview | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     const hydrateFromLocation = () => {
@@ -65,21 +67,32 @@ export default function FplSquadImportPage() {
       setError('Copy was blocked. Expand the manual code and copy it directly.');
     }
   };
-  const confirmSquad = () => {
+  const confirmSquad = async () => {
     if (!result) return;
+    setSaving(true);
     try {
+      const response = await fetch('/api/v1/planning/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ importedSquad: result }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error ?? 'Unable to save confirmed squad');
       saveConfirmedFplSquad(result);
       setConfirmed(true);
+      setExpiresAt(typeof body.expiresAt === 'string' ? body.expiresAt : null);
       setError(null);
-    } catch {
-      setError('Safari could not retain the confirmed squad for this tab.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to save confirmed squad');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <main className={styles.page}>
       <section className={styles.card}>
-        <p className={styles.eyebrow}>Phase 3 · local squad review</p>
+        <p className={styles.eyebrow}>Current squad connection</p>
         <h1>Connect your current FPL squad</h1>
         <p className={styles.intro}>Install this private Safari bookmark once, then run it from FPL’s signed-in Pick Team page whenever you want a fresh pre-deadline squad.</p>
 
@@ -91,7 +104,7 @@ export default function FplSquadImportPage() {
             <div><dt>Schema</dt><dd>v{result.schemaVersion}</dd></div>
             <div><dt>Bank</dt><dd>£{(result.transfers.bank / 10).toFixed(1)}m</dd></div>
           </dl>
-          <p>The fragment was cleared immediately. Your squad remains local to this tab and has not been saved.</p>
+          <p>The fragment was cleared immediately. Review the players below before anything is saved.</p>
         </div> : <>
           <ol className={styles.steps}>
             <li>Click <strong>Copy complete bookmark code</strong>.</li>
@@ -111,7 +124,7 @@ export default function FplSquadImportPage() {
           <div className={styles.playerGrid}>{review.startingEleven.map(player => <PlayerRow key={player.id} player={player} />)}</div>
           <h3>Bench</h3>
           <div className={styles.playerGrid}>{review.bench.map(player => <PlayerRow key={player.id} player={player} />)}</div>
-          {confirmed ? <div className={styles.confirmed} role="status"><strong>Squad confirmed for this tab</strong><span>It is ready for scenario planning and has not been written to the database.</span><Link href="/planning">Continue to Planning →</Link></div> : <button className={styles.confirm} type="button" onClick={confirmSquad}>Confirm this squad</button>}
+          {confirmed ? <div className={styles.confirmed} role="status"><strong>Squad saved for Planning</strong><span>Available across your signed-in dashboard{expiresAt ? ` until ${new Date(expiresAt).toLocaleString()}` : ' until this Gameweek deadline'}.</span><Link href="/planning">Continue to Planning →</Link></div> : <button className={styles.confirm} type="button" disabled={saving} onClick={() => void confirmSquad()}>{saving ? 'Saving confirmed squad…' : 'Confirm and save squad'}</button>}
         </section>}
 
         {error && <p className={styles.error} role="alert">{error}</p>}

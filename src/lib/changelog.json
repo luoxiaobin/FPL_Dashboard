@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.8",
+    "date": "2026-08-18",
+    "title": "Durable Confirmed Squad Lifecycle",
+    "changes": [
+      "Saves a reviewed authenticated squad server-side so Planning can use it across tabs and signed-in sessions.",
+      "Supports explicit refresh, replacement, and clearing while automatically expiring the import after the Gameweek deadline.",
+      "Prefers official public Gameweek picks as soon as FPL releases them, retaining the saved squad only as a pre-deadline fallback."
+    ]
+  },
+  {
     "version": "0.6.7",
     "date": "2026-08-18",
     "title": "Scenario Risk-Range Clarity",

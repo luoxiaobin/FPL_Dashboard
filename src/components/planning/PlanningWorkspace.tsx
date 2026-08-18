@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PlanningScenario } from '@/server/planning/types';
 import styles from './PlanningWorkspace.module.css';
-import { readConfirmedFplSquad } from '@/lib/fplSquadSession';
+import { clearConfirmedFplSquad, readConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 interface PlayerSummary {
   id: number;
@@ -72,6 +72,7 @@ export default function PlanningWorkspace() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to generate scenarios');
       setData(payload);
+      setUsingConfirmedSquad(payload.squadSource === 'authenticated-import');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to generate scenarios');
     } finally {
@@ -108,6 +109,22 @@ export default function PlanningWorkspace() {
     }));
     setSavedPlan(selectedScenario.strategy);
   };
+  const clearSquad = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/v1/planning/import', { method: 'DELETE' });
+      if (!response.ok) throw new Error('Unable to clear the saved squad');
+      clearConfirmedFplSquad();
+      setUsingConfirmedSquad(false);
+      setData(null);
+      setError('Saved squad cleared. Import your current picks again to plan before the deadline.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to clear the saved squad');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className={styles.page}>
@@ -121,8 +138,8 @@ export default function PlanningWorkspace() {
       </header>
 
       <section className={styles.importCard} aria-labelledby="current-squad-title">
-        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">{usingConfirmedSquad ? 'Confirmed squad connected' : 'Use your current FPL picks'}</h2><p>{usingConfirmedSquad ? `Planning is using the squad you reviewed in this Safari tab.${data?.transferState?.unlimited ? ' Unlimited changes are modeled with no points hit.' : ''}` : 'Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.'}</p></div>
-        <Link href="/planning/import">{usingConfirmedSquad ? 'Refresh squad' : 'Set up squad import'}</Link>
+        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">{usingConfirmedSquad ? 'Confirmed squad connected' : 'Use your current FPL picks'}</h2><p>{usingConfirmedSquad ? `Planning is using your reviewed, saved squad.${data?.transferState?.unlimited ? ' Unlimited changes are modeled with no points hit.' : ''}` : 'Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.'}</p></div>
+        <div className={styles.importActions}><Link href="/planning/import">{usingConfirmedSquad ? 'Refresh squad' : 'Set up squad import'}</Link>{usingConfirmedSquad && <button type="button" onClick={() => void clearSquad()}>Clear saved squad</button>}</div>
       </section>
 
       <section className={styles.constraints} aria-labelledby="constraints-title">

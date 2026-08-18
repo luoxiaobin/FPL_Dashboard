@@ -9,6 +9,7 @@ import {
 } from '@/server/planning/types';
 import { parseFplSquadImport, FplSquadImportValidationError } from '@/lib/fplSquadImport';
 import { PlanningSquadValidationError } from '@/server/planning/importedSquad';
+import { loadConfirmedSquadImport } from '@/server/planning/importStore';
 
 const numericIds = (value: unknown): number[] => Array.isArray(value)
   ? [...new Set(value.filter(item => Number.isInteger(item) && Number(item) > 0).map(Number))].slice(0, 50)
@@ -37,7 +38,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const constraints = parseConstraints(body?.constraints ?? DEFAULT_PLANNING_CONSTRAINTS);
-    const importedSquad = body?.importedSquad === undefined ? undefined : parseFplSquadImport(body.importedSquad);
+    const requestImport = body?.importedSquad === undefined ? undefined : parseFplSquadImport(body.importedSquad);
+    if (requestImport && requestImport.entryId !== Number(entryId)) {
+      throw new PlanningSquadValidationError('The imported squad belongs to a different FPL entry');
+    }
+    const storedImport = requestImport ? null : await loadConfirmedSquadImport(Number(entryId));
+    const importedSquad = requestImport ?? storedImport?.payload;
     const workspace = await buildPlanningWorkspace(Number(entryId), constraints, importedSquad);
     return NextResponse.json(workspace);
   } catch (error) {

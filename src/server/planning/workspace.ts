@@ -1,5 +1,5 @@
 import 'server-only';
-import { fetchFplJson } from '@/server/fpl/client';
+import { fetchFplJson, FplUpstreamError } from '@/server/fpl/client';
 import { projectPlayer } from '@/server/projections/model';
 import { generatePlanningScenarios } from '@/server/scenarios/generator';
 import type { PlanningConstraints, Position } from '@/server/planning/types';
@@ -60,18 +60,27 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     ?? bootstrap.events[0];
   if (!activeEvent) throw new Error('FPL has no available Gameweek');
 
-  if (importedSquad) validateImportedSquadForPlanning(importedSquad, entryId, bootstrap.elements.map(player => ({
-    id: player.id,
-    teamId: player.team,
-    position: asPosition(player.element_type),
-  })));
-  const picks: PicksPayload = importedSquad ? {
-    picks: importedSquad.picks.map(pick => ({ element: pick.elementId, selling_price: pick.sellingPrice })),
-    entry_history: { bank: importedSquad.transfers.bank },
-  } : await fetchFplJson<PicksPayload>(
+  let picks: PicksPayload;
+  let squadSource: 'authenticated-import' | 'public-gameweek' = 'public-gameweek';
+  try {
+    picks = await fetchFplJson<PicksPayload>(
       `/api/entry/${entryId}/event/${activeEvent.id}/picks/`,
       { timeoutMs: 8_000 },
     );
+  } catch (error) {
+    if (!(error instanceof FplUpstreamError) || error.status !== 404 || !importedSquad) throw error;
+    const validUntil = new Date(Date.parse(activeEvent.deadline_time) + 2 * 60 * 60_000);
+    validateImportedSquadForPlanning(importedSquad, entryId, bootstrap.elements.map(player => ({
+      id: player.id,
+      teamId: player.team,
+      position: asPosition(player.element_type),
+    })), new Date(), validUntil);
+    picks = {
+      picks: importedSquad.picks.map(pick => ({ element: pick.elementId, selling_price: pick.sellingPrice })),
+      entry_history: { bank: importedSquad.transfers.bank },
+    };
+    squadSource = 'authenticated-import';
+  }
   if (!Array.isArray(picks.picks) || picks.picks.length !== 15) {
     throw new Error('The FPL squad is not available for planning yet');
   }
@@ -113,7 +122,7 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     candidates,
     (picks.entry_history?.bank ?? 0) / 10,
     constraints,
-    importedSquad ? {
+    squadSource === 'authenticated-import' && importedSquad ? {
       freeTransfers: importedSquad.transfers.freeTransfers ?? 0,
       unlimited: importedSquad.transfers.status === 'unlimited',
     } : undefined,
@@ -126,11 +135,11 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     capturedAt: capturedAt.toISOString(),
     freshUntil: new Date(capturedAt.getTime() + 5 * 60_000).toISOString(),
     sourceVersion: `${activeEvent.id}:${capturedAt.toISOString().slice(0, 16)}`,
-    squadSource: importedSquad ? 'authenticated-import' : 'public-gameweek',
-    sourceCapturedAt: importedSquad?.capturedAt ?? capturedAt.toISOString(),
-    transferState: importedSquad ? {
-      freeTransfers: importedSquad.transfers.freeTransfers,
-      unlimited: importedSquad.transfers.status === 'unlimited',
+    squadSource,
+    sourceCapturedAt: squadSource === 'authenticated-import' ? importedSquad!.capturedAt : capturedAt.toISOString(),
+    transferState: squadSource === 'authenticated-import' ? {
+      freeTransfers: importedSquad!.transfers.freeTransfers,
+      unlimited: importedSquad!.transfers.status === 'unlimited',
     } : { freeTransfers: 1, unlimited: false },
     scenarios,
     players: Object.fromEntries(projections.map(player => [player.id, {

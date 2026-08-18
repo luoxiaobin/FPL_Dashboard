@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import PlanningWorkspace from './PlanningWorkspace';
-import { saveConfirmedFplSquad } from '@/lib/fplSquadSession';
+import { readConfirmedFplSquad, saveConfirmedFplSquad } from '@/lib/fplSquadSession';
 import type { FplSquadImport } from '@/lib/fplSquadImport';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -21,6 +21,9 @@ const payload = {
   deadline: '2026-08-21T17:30:00Z',
   capturedAt: '2026-08-17T12:00:00Z',
   freshUntil: '2026-08-17T12:05:00Z',
+  squadSource: 'public-gameweek',
+  sourceCapturedAt: '2026-08-17T12:00:00Z',
+  transferState: { freeTransfers: 1, unlimited: false },
   scenarios: [scenario('floor', 1), scenario('balanced', 2), scenario('upside', 3)],
   players: Object.fromEntries(Array.from({ length: 15 }, (_, index) => {
     const id = index + 1;
@@ -81,11 +84,18 @@ describe('PlanningWorkspace', () => {
       transfers: { bank: 15, squadValue: 1_015, freeTransfers: 1, transfersMade: 0, transferCost: 0, status: 'cost' },
     };
     saveConfirmedFplSquad(importedSquad);
-    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 200, json: async () => payload } as Response);
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...payload, squadSource: 'authenticated-import', transferState: { freeTransfers: null, unlimited: true } }),
+    } as Response);
     render(<PlanningWorkspace />);
     await screen.findByText('Confirmed squad connected');
     const request = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(request.importedSquad.entryId).toBe(42);
     expect(request.importedSquad.picks).toHaveLength(15);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear saved squad' }));
+    expect(await screen.findByText(/Saved squad cleared/)).toBeTruthy();
+    expect(readConfirmedFplSquad()).toBeNull();
   });
 });

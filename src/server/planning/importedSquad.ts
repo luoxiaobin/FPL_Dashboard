@@ -25,12 +25,14 @@ export function validateImportedSquadForPlanning(
   authenticatedEntryId: number,
   availablePlayers: PlanningPlayerIdentity[],
   now = new Date(),
+  validUntil?: Date,
 ): void {
   if (imported.entryId !== authenticatedEntryId) {
     throw new PlanningSquadValidationError('The imported squad belongs to a different FPL entry');
   }
   const ageMs = now.getTime() - Date.parse(imported.capturedAt);
-  if (ageMs < -5 * 60_000 || ageMs > 2 * 60 * 60_000) {
+  const expired = validUntil ? now.getTime() > validUntil.getTime() : ageMs > 2 * 60 * 60_000;
+  if (ageMs < -5 * 60_000 || expired) {
     throw new PlanningSquadValidationError('The imported squad is no longer fresh; run the bookmark again');
   }
 

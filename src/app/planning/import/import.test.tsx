@@ -39,15 +39,15 @@ describe('FPL squad import setup', () => {
   });
 
   it('validates transported data and immediately clears the URL fragment', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => ({
       ok: true,
-      json: async () => ({ players: Array.from({ length: 15 }, (_, index) => ({
+      json: async () => String(input).includes('player-catalog') ? ({ players: Array.from({ length: 15 }, (_, index) => ({
         id: index + 101,
         name: `Player ${index + 1}`,
         teamId: (index % 5) + 1,
         teamName: `Club ${(index % 5) + 1}`,
         position: index === 0 || index === 11 ? 'GKP' : index < 6 ? 'DEF' : index < 11 ? 'MID' : 'FWD',
-      })) }),
+      })) }) : ({ confirmed: true, expiresAt: '2026-08-21T19:30:00.000Z' }),
     })));
     window.history.replaceState(null, '', `/planning/import#data=${encodeFplSquadImport(payload)}`);
     render(<FplSquadImportPage />);
@@ -56,8 +56,8 @@ describe('FPL squad import setup', () => {
     expect(screen.getByText('15')).toBeTruthy();
     expect(window.location.hash).toBe('');
     expect(await screen.findByText('Player 1')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm this squad' }));
-    expect(screen.getByText('Squad confirmed for this tab')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm and save squad' }));
+    expect(await screen.findByText('Squad saved for Planning')).toBeTruthy();
     expect(readConfirmedFplSquad()?.entryId).toBe(3_376_378);
     expect(screen.getByRole('link', { name: /Continue to Planning/ })).toBeTruthy();
   });
