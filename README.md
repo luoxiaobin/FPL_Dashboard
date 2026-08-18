@@ -135,6 +135,15 @@ The first vertical slice generates Floor, Balanced, and Upside five-Gameweek pla
 
 `/api/v1/health` reports deployment configuration and official FPL upstream readiness. A degraded response is HTTP 503 by design.
 
+Run the non-destructive production smoke test after each deployment:
+
+```bash
+npm run test:smoke
+```
+
+Set `SMOKE_BASE_URL` to test another deployment. The smoke test verifies health, the Planning feature flag, unauthenticated API protection, and security headers without creating a session or changing production data.
+GitHub Actions also runs this check every six hours and supports manual runs against a supplied deployment URL.
+
 Production deployment:
 
 https://fpl-dashboard-seven-pi.vercel.app/
@@ -145,6 +154,7 @@ https://fpl-dashboard-seven-pi.vercel.app/
 npm run lint
 npm run test
 npm run build
+npm run test:smoke
 ```
 
 ## Documentation

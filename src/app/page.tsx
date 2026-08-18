@@ -37,6 +37,7 @@ interface UserSummary {
   bank_balance: number;
   total_value: number;
   transfers_available: number;
+  current_event_status?: string;
 }
 
 interface LiveSquadData {
@@ -46,6 +47,7 @@ interface LiveSquadData {
 }
 
 export default function DashboardShell() {
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'error'>('checking');
   const [summary, setSummary] = useState<UserSummary | null>(null);
   const [liveSquad, setLiveSquad] = useState<LiveSquadData | null>(null);
   const [viewingLeagueId, setViewingLeagueId] = useState<number | null>(null);
@@ -54,7 +56,7 @@ export default function DashboardShell() {
   const [liveOrder, setLiveOrder] = useState<PanelKey[]>(LIVE_DEFAULT_ORDER);
   const [modeOverride, setModeOverride] = useState<GwMode | null>(() => getStoredModeOverride());
   const router = useRouter();
-  const autoMode = useGwMode();
+  const autoMode = useGwMode(authStatus === 'authenticated');
   const effectiveMode: GwMode = modeOverride ?? autoMode;
 
   const handleOverride = useCallback((next: GwMode) => {
@@ -72,32 +74,50 @@ export default function DashboardShell() {
   };
 
   useEffect(() => {
-    fetch('/api/v1/user/summary')
-      .then(async (res) => {
-        if (res.status === 401) { router.push('/login'); return null; }
-        return res.json();
-      })
-      .then(data => { if (data && !data.error) setSummary(data); })
-      .catch(err => console.error('Failed to load summary:', err));
+    const controller = new AbortController();
 
-    fetch('/api/v1/squad/live')
-      .then(res => res.json())
-      .then(data => { if (data && !data.error) setLiveSquad(data); })
-      .catch(err => console.error('Failed to load live squad:', err));
+    async function loadDashboard() {
+      try {
+        const summaryResponse = await fetch('/api/v1/user/summary', { signal: controller.signal });
+        if (summaryResponse.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        if (!summaryResponse.ok) throw new Error(`Summary request failed (${summaryResponse.status})`);
 
-    fetch('/api/v1/user/preferences')
-      .then(res => res.json())
-      .then(data => {
-        if (!data) return;
-        if (data.preferences) setSections(data.preferences);
-        if (Array.isArray(data.planning_panel_order) && data.planning_panel_order.length > 0) {
-          setPlanningOrder(mergeOrder(data.planning_panel_order, PLANNING_DEFAULT_ORDER));
+        const summaryData = await summaryResponse.json();
+        if (summaryData?.error) throw new Error(summaryData.error);
+        setSummary(summaryData);
+        setAuthStatus('authenticated');
+
+        const [squadResult, preferencesResult] = await Promise.allSettled([
+          fetch('/api/v1/squad/live', { signal: controller.signal }).then(res => res.json()),
+          fetch('/api/v1/user/preferences', { signal: controller.signal }).then(res => res.json()),
+        ]);
+
+        if (squadResult.status === 'fulfilled' && !squadResult.value?.error) {
+          setLiveSquad(squadResult.value);
         }
-        if (Array.isArray(data.live_panel_order) && data.live_panel_order.length > 0) {
-          setLiveOrder(mergeOrder(data.live_panel_order, LIVE_DEFAULT_ORDER));
+
+        if (preferencesResult.status === 'fulfilled') {
+          const data = preferencesResult.value;
+          if (data?.preferences) setSections(data.preferences);
+          if (Array.isArray(data?.planning_panel_order) && data.planning_panel_order.length > 0) {
+            setPlanningOrder(mergeOrder(data.planning_panel_order, PLANNING_DEFAULT_ORDER));
+          }
+          if (Array.isArray(data?.live_panel_order) && data.live_panel_order.length > 0) {
+            setLiveOrder(mergeOrder(data.live_panel_order, LIVE_DEFAULT_ORDER));
+          }
         }
-      })
-      .catch(err => console.error('Failed to load preferences:', err));
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('Failed to load dashboard:', error);
+        setAuthStatus('error');
+      }
+    }
+
+    void loadDashboard();
+    return () => controller.abort();
   }, [router]);
 
   const handleLogout = async () => {
@@ -170,6 +190,18 @@ export default function DashboardShell() {
   };
 
   const currentOrder = effectiveMode === 'live' ? liveOrder : planningOrder;
+
+  if (authStatus !== 'authenticated') {
+    return (
+      <main className={styles.container} aria-busy={authStatus === 'checking'}>
+        <p role="status">
+          {authStatus === 'error'
+            ? 'Unable to load the dashboard. Please refresh and try again.'
+            : 'Loading dashboard…'}
+        </p>
+      </main>
+    );
+  }
 
   // Deduplicate: merged panels share one render slot
   const renderedKeys = new Set<string>();

@@ -30,10 +30,12 @@ export function statusToMode(status: string | undefined): GwMode {
   return status === 'live' ? 'live' : 'planning';
 }
 
-export function useGwMode(): GwMode {
+export function useGwMode(enabled = true): GwMode {
   const [mode, setMode] = useState<GwMode>('planning');
 
   useEffect(() => {
+    if (!enabled) return;
+
     let cancelled = false;
 
     async function poll() {
@@ -53,7 +55,7 @@ export function useGwMode(): GwMode {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [enabled]);
 
   return mode;
 }
