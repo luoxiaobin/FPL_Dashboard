@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PlanningScenario } from '@/server/planning/types';
 import styles from './PlanningWorkspace.module.css';
@@ -99,6 +100,11 @@ export default function PlanningWorkspace() {
         </div>
         {data && <div className={styles.deadline}>GW{data.gameweek} deadline<br /><strong>{new Date(data.deadline).toLocaleString()}</strong></div>}
       </header>
+
+      <section className={styles.importCard} aria-labelledby="current-squad-title">
+        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">Use your current FPL picks</h2><p>Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.</p></div>
+        <Link href="/planning/import">Set up squad import</Link>
+      </section>
 
       <section className={styles.constraints} aria-labelledby="constraints-title">
         <div><h2 id="constraints-title">Your constraints</h2><p>Use FPL player IDs, separated by commas.</p></div>

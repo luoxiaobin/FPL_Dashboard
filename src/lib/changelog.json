@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.4",
+    "date": "2026-08-18",
+    "title": "Complete Squad Bookmarklet",
+    "changes": [
+      "Adds a discoverable current-squad import setup card to the Planning workspace.",
+      "Creates a Safari bookmarklet that normalizes the authenticated my-team response into contract version 1.",
+      "Validates the transported squad, clears fragment data immediately, and keeps persistence disabled pending review."
+    ]
+  },
+  {
     "version": "0.6.3",
     "date": "2026-08-18",
     "title": "Authenticated Squad Import Contract",

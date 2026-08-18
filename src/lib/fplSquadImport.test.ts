@@ -3,6 +3,8 @@ import {
   FPL_SQUAD_IMPORT_SCHEMA_VERSION,
   FPL_SQUAD_IMPORT_SOURCE,
   FplSquadImportValidationError,
+  decodeFplSquadImport,
+  encodeFplSquadImport,
   parseFplSquadImport,
   type FplSquadImport,
 } from './fplSquadImport';
@@ -35,6 +37,7 @@ const validImport = (): FplSquadImport => ({
 describe('FPL squad import contract', () => {
   it('accepts a complete pre-season squad with unlimited transfers', () => {
     expect(parseFplSquadImport(validImport())).toEqual(validImport());
+    expect(decodeFplSquadImport(encodeFplSquadImport(validImport()))).toEqual(validImport());
   });
 
   it('accepts a bounded in-season transfer allowance', () => {
@@ -65,5 +68,10 @@ describe('FPL squad import contract', () => {
     const payload = validImport() as FplSquadImport & { picks: Array<FplSquadImport['picks'][number] & { email?: string }> };
     payload.picks[0].email = 'private@example.com';
     expect(() => parseFplSquadImport(payload)).toThrow('fields do not match schema');
+  });
+
+  it('rejects malformed and oversized encoded payloads before parsing', () => {
+    expect(() => decodeFplSquadImport('%%%')).toThrow('invalid or too large');
+    expect(() => decodeFplSquadImport('a'.repeat(12_001))).toThrow('invalid or too large');
   });
 });

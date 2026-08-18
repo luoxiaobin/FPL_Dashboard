@@ -1,5 +1,6 @@
 export const FPL_SQUAD_IMPORT_SCHEMA_VERSION = 1 as const;
 export const FPL_SQUAD_IMPORT_SOURCE = 'fpl-authenticated-my-team' as const;
+export const FPL_SQUAD_IMPORT_MAX_ENCODED_LENGTH = 12_000;
 
 export interface FplImportedPick {
   elementId: number;
@@ -114,4 +115,39 @@ export function parseFplSquadImport(value: unknown): FplSquadImport {
 
   if (issues.length > 0) throw new FplSquadImportValidationError(issues);
   return value as unknown as FplSquadImport;
+}
+
+const encodeBase64Url = (value: string): string => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+};
+
+const decodeBase64Url = (value: string): string => {
+  if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length > FPL_SQUAD_IMPORT_MAX_ENCODED_LENGTH) {
+    throw new FplSquadImportValidationError(['encoded payload is invalid or too large']);
+  }
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const binary = atob(padded);
+  return new TextDecoder().decode(Uint8Array.from(binary, character => character.charCodeAt(0)));
+};
+
+export function encodeFplSquadImport(value: FplSquadImport): string {
+  const parsed = parseFplSquadImport(value);
+  const encoded = encodeBase64Url(JSON.stringify(parsed));
+  if (encoded.length > FPL_SQUAD_IMPORT_MAX_ENCODED_LENGTH) {
+    throw new FplSquadImportValidationError(['encoded payload is too large']);
+  }
+  return encoded;
+}
+
+export function decodeFplSquadImport(encoded: string): FplSquadImport {
+  try {
+    return parseFplSquadImport(JSON.parse(decodeBase64Url(encoded)));
+  } catch (error) {
+    if (error instanceof FplSquadImportValidationError) throw error;
+    throw new FplSquadImportValidationError(['encoded payload is malformed']);
+  }
 }

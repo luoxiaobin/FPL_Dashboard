@@ -5,6 +5,10 @@
 .subtitle, .constraints p, .freshness { color: #91a89a; }
 .deadline { align-self: end; padding: 14px 18px; border: 1px solid #254536; border-radius: 12px; color: #91a89a; text-align: right; }
 .deadline strong { color: #fff; }
+.importCard { display: flex; justify-content: space-between; gap: 20px; align-items: center; max-width: 1200px; margin: 0 auto 24px; padding: 18px; border: 1px solid #2d6844; border-radius: 16px; background: #0c2115; }
+.importCard h2, .importCard p { margin: 4px 0; }
+.importCard p:not(.eyebrow) { color: #a8b9ae; }
+.importCard a { flex: 0 0 auto; min-height: 44px; padding: 12px 16px; border-radius: 9px; color: #041008; background: #62d98b; font-weight: 800; text-decoration: none; }
 .constraints { display: grid; grid-template-columns: 1.2fr repeat(4, 1fr) auto; gap: 12px; align-items: end; max-width: 1200px; margin: 0 auto 24px; padding: 18px; border: 1px solid #1c3529; border-radius: 16px; background: #0b1912; }
 .constraints h2, .constraints p { margin: 0; }
 .constraints label { display: grid; gap: 6px; color: #a8b9ae; font-size: .78rem; }
@@ -29,4 +33,4 @@
 .bench { display: flex; gap: 24px; padding-left: 22px; color: #b8c9be; }
 .freshness { margin: 24px 0 0; font-size: .75rem; }
 @media (max-width: 900px) { .constraints { grid-template-columns: 1fr 1fr; } .scenarioGrid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .page { padding: 18px; } .header { display: grid; } .deadline { text-align: left; } .constraints { grid-template-columns: 1fr; } .scenarioGrid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .scenario { min-width: 84vw; scroll-snap-align: start; } .metrics, .playerList { grid-template-columns: 1fr; } .detailHeader { align-items: flex-start; flex-direction: column; } .planButton { position: sticky; bottom: 12px; width: 100%; } }
+@media (max-width: 560px) { .page { padding: 18px; } .header { display: grid; } .deadline { text-align: left; } .importCard { align-items: stretch; flex-direction: column; } .importCard a { text-align: center; } .constraints { grid-template-columns: 1fr; } .scenarioGrid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .scenario { min-width: 84vw; scroll-snap-align: start; } .metrics, .playerList { grid-template-columns: 1fr; } .detailHeader { align-items: flex-start; flex-direction: column; } .planButton { position: sticky; bottom: 12px; width: 100%; } }
