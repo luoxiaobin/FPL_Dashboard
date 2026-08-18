@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.3",
+    "date": "2026-08-18",
+    "title": "Authenticated Squad Import Contract",
+    "changes": [
+      "Defines a minimal versioned contract for current squad, captaincy, prices, bank, chip, and transfer state.",
+      "Rejects duplicate players, invalid lineup positions, malformed values, and unexpected fields.",
+      "Adds a production contract-readiness endpoint while keeping import persistence disabled."
+    ]
+  },
+  {
     "version": "0.6.2",
     "date": "2026-08-18",
     "title": "FPL Import Feasibility Probe",
