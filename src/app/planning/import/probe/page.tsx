@@ -15,15 +15,20 @@ export default function FplImportProbePage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
-    const encoded = new URLSearchParams(window.location.hash.slice(1)).get('data');
-    if (!encoded) return;
-    window.history.replaceState(null, '', window.location.pathname);
-    try {
-      setResult(decodeFplImportProbe(encoded));
-    } catch {
-      setError('The probe returned malformed data. Nothing was saved.');
-    }
+    const hydrateFromLocation = () => {
+      setOrigin(window.location.origin);
+      const encoded = new URLSearchParams(window.location.hash.slice(1)).get('data');
+      if (!encoded) return;
+      window.history.replaceState(null, '', window.location.pathname);
+      try {
+        setResult(decodeFplImportProbe(encoded));
+      } catch {
+        setError('The probe returned malformed data. Nothing was saved.');
+      }
+    };
+
+    const timeout = window.setTimeout(hydrateFromLocation, 0);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   const bookmarklet = useMemo(
