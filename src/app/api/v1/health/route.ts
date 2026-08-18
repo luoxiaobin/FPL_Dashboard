@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchFplJson } from '@/server/fpl/client';
+import { getReleaseIdentity } from '@/lib/release';
 
 interface BootstrapHealth {
   events?: unknown[];
@@ -7,6 +8,7 @@ interface BootstrapHealth {
 }
 
 export async function GET() {
+  const release = getReleaseIdentity();
   const configurationReady = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL
     && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -28,6 +30,7 @@ export async function GET() {
         configuration: configurationReady ? 'pass' : 'fail',
         fpl: upstreamReady ? 'pass' : 'fail',
       },
+      release,
       timestamp: new Date().toISOString(),
     }, { status: ready ? 200 : 503 });
   } catch {
@@ -37,8 +40,8 @@ export async function GET() {
         configuration: configurationReady ? 'pass' : 'fail',
         fpl: 'fail',
       },
+      release,
       timestamp: new Date().toISOString(),
     }, { status: 503 });
   }
 }
-

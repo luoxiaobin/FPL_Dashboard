@@ -10,6 +10,9 @@
   z-index: 50;
   transition: all 0.2s;
   user-select: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
 }
 
 .trigger:hover {
@@ -72,6 +75,46 @@
   line-height: 1;
   cursor: pointer;
   padding: 0;
+}
+
+.releaseGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.releaseGrid div {
+  min-width: 0;
+}
+
+.releaseGrid dt {
+  color: #64748b;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.releaseGrid dd {
+  margin: 3px 0 0;
+  color: #e2e8f0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.releaseGrid .deployment {
+  grid-column: 1 / -1;
+}
+
+.changelogTitle {
+  margin: 0 0 12px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
 }
 
 .scrollArea {

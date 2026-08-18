@@ -148,6 +148,8 @@ Production deployment:
 
 https://fpl-dashboard-seven-pi.vercel.app/
 
+The fixed badge in the lower-right corner identifies the deployed release as `v<version> · <Git SHA>`. Click it to see the environment, branch, full deployment identity, and changelog. The same identity is returned by `/api/v1/health` under `release`.
+
 ## Validation commands
 
 ```bash

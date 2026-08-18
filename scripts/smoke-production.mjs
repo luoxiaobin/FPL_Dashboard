@@ -20,6 +20,8 @@ async function run() {
   assert(healthBody.status === 'ready', `Health status is ${healthBody.status}`);
   assert(healthBody.checks?.configuration === 'pass', 'Configuration check did not pass');
   assert(healthBody.checks?.fpl === 'pass', 'FPL upstream check did not pass');
+  assert(/^\d+\.\d+\.\d+$/.test(healthBody.release?.version ?? ''), 'Release version is missing');
+  assert(healthBody.release?.shortCommitSha, 'Release commit is missing');
 
   const planningPage = await request('/planning');
   assert(planningPage.status === 200, `Planning page returned ${planningPage.status}`);
@@ -46,6 +48,7 @@ async function run() {
   }
 
   console.log(`Production smoke test passed: ${baseUrl}`);
+  console.log(`  release: v${healthBody.release.version} · ${healthBody.release.shortCommitSha}`);
   console.log('  health: ready');
   console.log('  planning page: enabled');
   console.log('  protected APIs: reject unauthenticated requests');

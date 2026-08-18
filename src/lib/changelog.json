@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.6.0",
+    "date": "2026-08-17",
+    "title": "2026–27 Planning Workspace Launch",
+    "changes": [
+      "Added Floor, Balanced, and Upside five-Gameweek planning scenarios",
+      "Replaced raw entry cookies with revocable hashed server-side sessions",
+      "Added production readiness checks, migration foundations, and automated smoke testing",
+      "Added deployment-specific release identity using the Git commit and Vercel deployment ID"
+    ]
+  },
+  {
     "version": "0.5.0",
     "date": "2026-04-06",
     "title": "Next.js 16 Migration & Season Trajectory 2.0",
