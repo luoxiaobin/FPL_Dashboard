@@ -15,6 +15,8 @@
 .constraints input, .constraints select { min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #2a4637; border-radius: 8px; color: #fff; background: #07110d; }
 .constraints button, .planButton { min-height: 44px; padding: 11px 15px; border: 0; border-radius: 9px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
 .state { max-width: 1200px; margin: 30px auto; padding: 28px; border: 1px solid #473a20; border-radius: 16px; background: #1c170c; }
+.convergence { display: grid; gap: 5px; max-width: 1200px; margin: 0 auto 18px; padding: 15px 18px; border: 1px solid #315340; border-radius: 12px; color: #a8b9ae; background: #101c16; }
+.convergence strong { color: #edf7f0; }
 .scenarioGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1200px; margin: 0 auto 24px; }
 .scenario { display: grid; gap: 8px; padding: 20px; border: 1px solid #203b2e; border-radius: 16px; color: #b8c9be; background: #0b1912; text-align: left; cursor: pointer; }
 .scenario strong { color: #fff; font-size: 2rem; }

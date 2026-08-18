@@ -124,13 +124,18 @@ function buildScenario(
   const captaincy = [...starters].sort((a, b) => strategyScore(b, strategy) - strategyScore(a, strategy));
   const captain = captaincy[0];
   const viceCaptain = captaincy[1];
+  const gameweekStrategyScore = (player: PlayerProjection) => {
+    const expected = player.expectedByGameweek[0] ?? 0;
+    if (player.expectedTotal <= 0) return expected;
+    return expected * (strategyScore(player, strategy) / player.expectedTotal);
+  };
   const projectedGameweekPoints = starters.reduce(
-    (sum, player) => sum + (player.expectedByGameweek[0] ?? 0),
-    captain.expectedByGameweek[0] ?? 0,
+    (sum, player) => sum + gameweekStrategyScore(player),
+    gameweekStrategyScore(captain),
   ) - transferHit;
   const projectedFiveGameweekPoints = starters.reduce(
-    (sum, player) => sum + player.expectedTotal,
-    captain.expectedTotal,
+    (sum, player) => sum + strategyScore(player, strategy),
+    strategyScore(captain, strategy),
   ) - transferHit;
 
   const labels = { floor: 'Floor', balanced: 'Balanced', upside: 'Upside' };

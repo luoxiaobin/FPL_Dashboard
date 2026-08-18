@@ -85,6 +85,18 @@ export default function PlanningWorkspace() {
     () => data?.scenarios.find(scenario => scenario.strategy === selected) ?? data?.scenarios[0],
     [data, selected],
   );
+  const allPlansConverge = useMemo(() => {
+    if (!data || data.scenarios.length < 2) return false;
+    const signature = (scenario: PlanningScenario) => JSON.stringify({
+      transfers: scenario.transfers.map(transfer => [transfer.outPlayerId, transfer.inPlayerId]),
+      captainId: scenario.captainId,
+      startingEleven: [...scenario.startingEleven].sort((a, b) => a - b),
+    });
+    return data.scenarios.every(scenario => signature(scenario) === signature(data.scenarios[0]));
+  }, [data]);
+  const projectionLabel = (strategy: PlanningScenario['strategy']) => ({
+    floor: 'floor', balanced: 'expected', upside: 'ceiling',
+  }[strategy]);
   const playerName = (id: number) => data?.players[String(id)]?.name ?? `#${id}`;
   const savePlan = () => {
     if (!data || !selectedScenario) return;
@@ -126,6 +138,7 @@ export default function PlanningWorkspace() {
       {loading && !data && <section className={styles.state}><h2>Building your scenarios…</h2><p>Checking squad legality, projections and constraints.</p></section>}
 
       {data && <>
+        {allPlansConverge && <aside className={styles.convergence}><strong>Robust recommendation</strong><span>All three risk profiles converge on the same move, lineup and captain under current data. The point ranges below show its floor, expected outcome and ceiling—not three artificially different answers.</span></aside>}
         <section className={styles.scenarioGrid} aria-label="Planning scenarios">
           {data.scenarios.map(scenario => {
             const transferSummary = scenario.transfers.length > 0
@@ -134,6 +147,7 @@ export default function PlanningWorkspace() {
             return <button key={scenario.strategy} className={`${styles.scenario} ${selected === scenario.strategy ? styles.selected : ''}`} onClick={() => setSelected(scenario.strategy)}>
               <span className={styles.scenarioLabel}>{scenario.label}</span>
               <strong>{scenario.projectedFiveGameweekPoints.toFixed(1)} pts</strong>
+              <span>Five-GW {projectionLabel(scenario.strategy)}</span>
               <span>GW{data.gameweek}: {scenario.projectedGameweekPoints.toFixed(1)}</span>
               <span>Captain: {playerName(scenario.captainId)}</span>
               <span>{transferSummary}</span>
@@ -147,7 +161,7 @@ export default function PlanningWorkspace() {
           <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={savePlan}>{savedPlan === selectedScenario.strategy ? 'Saved as My Plan' : 'Mark as My Plan'}</button></div>
           <p className={styles.tradeoff}>{selectedScenario.tradeoff}</p>
           <div className={styles.metrics}>
-            <div><span>Five-GW projection</span><strong>{selectedScenario.projectedFiveGameweekPoints.toFixed(1)}</strong></div>
+            <div><span>Five-GW {projectionLabel(selectedScenario.strategy)}</span><strong>{selectedScenario.projectedFiveGameweekPoints.toFixed(1)}</strong></div>
             <div><span>Bank remaining</span><strong>£{selectedScenario.bankRemaining.toFixed(1)}m</strong></div>
             <div><span>Captain</span><strong>{playerName(selectedScenario.captainId)}</strong></div>
             <div><span>Vice captain</span><strong>{playerName(selectedScenario.viceCaptainId)}</strong></div>

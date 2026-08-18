@@ -34,6 +34,8 @@ describe('generatePlanningScenarios', () => {
       expect(scenario.startingEleven).toContain(scenario.captainId);
       expect(scenario.bankRemaining).toBeGreaterThanOrEqual(0);
     }
+    expect(scenarios[0].projectedFiveGameweekPoints).toBeLessThan(scenarios[1].projectedFiveGameweekPoints);
+    expect(scenarios[2].projectedFiveGameweekPoints).toBeGreaterThan(scenarios[1].projectedFiveGameweekPoints);
   });
 
   it('respects locked and excluded players', () => {
