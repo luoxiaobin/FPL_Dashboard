@@ -3,9 +3,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import DashboardShell from './page';
 
 const replace = vi.fn();
+const router = { push: vi.fn(), replace };
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace }),
+  useRouter: () => router,
 }));
 
 vi.mock('@/hooks/useGwMode', () => ({

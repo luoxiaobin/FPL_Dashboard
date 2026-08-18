@@ -8,8 +8,8 @@
 .constraints { display: grid; grid-template-columns: 1.2fr repeat(4, 1fr) auto; gap: 12px; align-items: end; max-width: 1200px; margin: 0 auto 24px; padding: 18px; border: 1px solid #1c3529; border-radius: 16px; background: #0b1912; }
 .constraints h2, .constraints p { margin: 0; }
 .constraints label { display: grid; gap: 6px; color: #a8b9ae; font-size: .78rem; }
-.constraints input, .constraints select { min-width: 0; padding: 10px; border: 1px solid #2a4637; border-radius: 8px; color: #fff; background: #07110d; }
-.constraints button, .planButton { padding: 11px 15px; border: 0; border-radius: 9px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
+.constraints input, .constraints select { min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #2a4637; border-radius: 8px; color: #fff; background: #07110d; }
+.constraints button, .planButton { min-height: 44px; padding: 11px 15px; border: 0; border-radius: 9px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
 .state { max-width: 1200px; margin: 30px auto; padding: 28px; border: 1px solid #473a20; border-radius: 16px; background: #1c170c; }
 .scenarioGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1200px; margin: 0 auto 24px; }
 .scenario { display: grid; gap: 8px; padding: 20px; border: 1px solid #203b2e; border-radius: 16px; color: #b8c9be; background: #0b1912; text-align: left; cursor: pointer; }
@@ -30,4 +30,3 @@
 .freshness { margin: 24px 0 0; font-size: .75rem; }
 @media (max-width: 900px) { .constraints { grid-template-columns: 1fr 1fr; } .scenarioGrid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .page { padding: 18px; } .header { display: grid; } .deadline { text-align: left; } .constraints { grid-template-columns: 1fr; } .scenarioGrid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .scenario { min-width: 84vw; scroll-snap-align: start; } .metrics, .playerList { grid-template-columns: 1fr; } .detailHeader { align-items: flex-start; flex-direction: column; } .planButton { position: sticky; bottom: 12px; width: 100%; } }
-
