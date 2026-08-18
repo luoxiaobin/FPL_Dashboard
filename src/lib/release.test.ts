@@ -9,7 +9,7 @@ describe('getReleaseIdentity', () => {
       VERCEL_GIT_COMMIT_REF: 'master',
       VERCEL_DEPLOYMENT_ID: 'dpl_example',
     })).toEqual({
-      version: '0.6.8',
+      version: '0.6.9',
       commitSha: 'abcdef1234567890',
       shortCommitSha: 'abcdef1',
       environment: 'production',
@@ -20,7 +20,7 @@ describe('getReleaseIdentity', () => {
 
   it('uses readable local fallbacks', () => {
     expect(getReleaseIdentity({ NODE_ENV: 'development' })).toMatchObject({
-      version: '0.6.8',
+      version: '0.6.9',
       commitSha: null,
       shortCommitSha: 'local',
       environment: 'development',

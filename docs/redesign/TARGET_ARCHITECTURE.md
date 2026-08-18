@@ -34,7 +34,7 @@ UI code does not fetch official FPL endpoints directly. Projection and optimizat
 
 ## Identity
 
-Team ID import is public exploration, not authentication. Read-only scenario generation may use a Team ID. Cross-device plan persistence, constraints, and preferences require verified application identity in a later increment.
+Team ID import establishes the dashboard's revocable manager session but is not FPL OAuth. The confirmed squad contract is stored against that session's entry ID and is available wherever the manager establishes the same dashboard session. My Plan, constraints, and preferences remain device-local.
 
 ## Migration
 
@@ -46,3 +46,4 @@ The legacy dashboard remains available while `planning_workspace_v1` is rolled o
 - Scenario generation supports constrained transfers, legal lineup selection, captaincy, and no-chip decisions. Chip opportunity modeling is deferred to the next optimizer increment.
 - My Plan is device-local until verified application identity and server persistence are introduced.
 - Production access remains disabled unless `PLANNING_WORKSPACE_V1=true`.
+- Pre-deadline squad access depends on a manager-invoked bookmark because FPL offers no third-party OAuth; official public picks take over automatically after the deadline.

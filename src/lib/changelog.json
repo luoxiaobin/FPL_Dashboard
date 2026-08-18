@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.9",
+    "date": "2026-08-18",
+    "title": "Launch Operations and Recovery",
+    "changes": [
+      "Adds database readiness and the active confirmed-import lifecycle to production health and smoke checks.",
+      "Keeps official public picks available if the saved-import store is temporarily degraded and improves pre-deadline recovery guidance.",
+      "Adds hourly production monitoring plus a deadline-day verification, recovery, privacy, and rollback runbook."
+    ]
+  },
+  {
     "version": "0.6.8",
     "date": "2026-08-18",
     "title": "Durable Confirmed Squad Lifecycle",

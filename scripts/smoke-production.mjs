@@ -19,6 +19,7 @@ async function run() {
   assert(health.status === 200, `Health returned ${health.status}`);
   assert(healthBody.status === 'ready', `Health status is ${healthBody.status}`);
   assert(healthBody.checks?.configuration === 'pass', 'Configuration check did not pass');
+  assert(healthBody.checks?.database === 'pass', 'Database check did not pass');
   assert(healthBody.checks?.fpl === 'pass', 'FPL upstream check did not pass');
   assert(/^\d+\.\d+\.\d+$/.test(healthBody.release?.version ?? ''), 'Release version is missing');
   assert(healthBody.release?.shortCommitSha, 'Release commit is missing');
@@ -27,6 +28,14 @@ async function run() {
   assert(planningPage.status === 200, `Planning page returned ${planningPage.status}`);
   const planningHtml = await planningPage.text();
   assert(planningHtml.includes('FPL planning workspace'), 'Planning feature flag is not active');
+
+  const contract = await request('/api/v1/planning/import-contract');
+  const contractBody = await contract.json();
+  assert(contract.status === 200, `Import contract returned ${contract.status}`);
+  assert(contractBody.status === 'ready', 'Import contract is not ready');
+  assert(contractBody.contract?.schemaVersion === 1, 'Import schema version is incorrect');
+  assert(contractBody.contract?.persistence === 'confirmed-server-side', 'Confirmed import persistence is not active');
+  assert(contractBody.contract?.publicPicksHandoff === 'automatic', 'Public picks handoff is not active');
 
   const summary = await request('/api/v1/user/summary');
   assert(summary.status === 401, `Unauthenticated summary returned ${summary.status}, expected 401`);
@@ -37,6 +46,14 @@ async function run() {
     body: '{}',
   });
   assert(scenarios.status === 401, `Unauthenticated planning API returned ${scenarios.status}, expected 401`);
+
+  for (const method of ['GET', 'POST', 'DELETE']) {
+    const importedSquad = await request('/api/v1/planning/import', {
+      method,
+      ...(method === 'POST' ? { headers: { 'content-type': 'application/json' }, body: '{}' } : {}),
+    });
+    assert(importedSquad.status === 401, `Unauthenticated import ${method} returned ${importedSquad.status}, expected 401`);
+  }
 
   const requiredHeaders = {
     'x-frame-options': 'DENY',
@@ -49,8 +66,9 @@ async function run() {
 
   console.log(`Production smoke test passed: ${baseUrl}`);
   console.log(`  release: v${healthBody.release.version} · ${healthBody.release.shortCommitSha}`);
-  console.log('  health: ready');
+  console.log('  health: configuration, database, and FPL ready');
   console.log('  planning page: enabled');
+  console.log('  confirmed import contract: ready');
   console.log('  protected APIs: reject unauthenticated requests');
   console.log('  security headers: present');
 }

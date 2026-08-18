@@ -8,6 +8,14 @@ export interface StoredSquadImport {
   expiresAt: string;
 }
 
+export async function checkConfirmedSquadImportStore(): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('confirmed_squad_imports')
+    .select('id', { head: true })
+    .limit(1);
+  return !error;
+}
+
 export async function saveConfirmedSquadImport(payload: FplSquadImport, expiresAt: Date): Promise<StoredSquadImport> {
   const row = {
     fpl_entry_id: payload.entryId,

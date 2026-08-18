@@ -18,7 +18,11 @@ export function GET() {
       captainRequired: true,
       viceCaptainRequired: true,
       unexpectedFields: 'rejected',
-      persistence: 'disabled',
+      persistence: 'confirmed-server-side',
+      replacement: 'latest-confirmation-wins',
+      clearing: 'explicit',
+      expiry: 'gameweek-deadline-plus-two-hours',
+      publicPicksHandoff: 'automatic',
     },
     release: getReleaseIdentity(),
   });

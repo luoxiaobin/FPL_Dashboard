@@ -42,7 +42,14 @@ export async function POST(request: NextRequest) {
     if (requestImport && requestImport.entryId !== Number(entryId)) {
       throw new PlanningSquadValidationError('The imported squad belongs to a different FPL entry');
     }
-    const storedImport = requestImport ? null : await loadConfirmedSquadImport(Number(entryId));
+    let storedImport = null;
+    if (!requestImport) {
+      try {
+        storedImport = await loadConfirmedSquadImport(Number(entryId));
+      } catch (error) {
+        console.error('Confirmed squad store unavailable; continuing with public FPL picks:', error);
+      }
+    }
     const importedSquad = requestImport ?? storedImport?.payload;
     const workspace = await buildPlanningWorkspace(Number(entryId), constraints, importedSquad);
     return NextResponse.json(workspace);
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
     if (error instanceof FplUpstreamError && error.status === 404) {
       return NextResponse.json({
-        error: 'Your current squad is not public yet. Scenario planning becomes available after the Gameweek deadline.',
+        error: 'Your current squad is not public yet. Refresh your saved squad import, or try again after the Gameweek deadline.',
       }, { status: 409 });
     }
     const message = error instanceof Error && error.message.includes('not available')
