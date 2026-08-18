@@ -11,6 +11,7 @@ import {
   type FplSquadReviewPlayer,
 } from '@/lib/fplSquadReview';
 import styles from './import.module.css';
+import { saveConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 export default function FplSquadImportPage() {
   const [origin, setOrigin] = useState('');
@@ -64,6 +65,16 @@ export default function FplSquadImportPage() {
       setError('Copy was blocked. Expand the manual code and copy it directly.');
     }
   };
+  const confirmSquad = () => {
+    if (!result) return;
+    try {
+      saveConfirmedFplSquad(result);
+      setConfirmed(true);
+      setError(null);
+    } catch {
+      setError('Safari could not retain the confirmed squad for this tab.');
+    }
+  };
 
   return (
     <main className={styles.page}>
@@ -100,7 +111,7 @@ export default function FplSquadImportPage() {
           <div className={styles.playerGrid}>{review.startingEleven.map(player => <PlayerRow key={player.id} player={player} />)}</div>
           <h3>Bench</h3>
           <div className={styles.playerGrid}>{review.bench.map(player => <PlayerRow key={player.id} player={player} />)}</div>
-          {confirmed ? <div className={styles.confirmed} role="status"><strong>Squad confirmed for this tab</strong><span>Nothing has been stored yet. Planning integration follows in Phase 4.</span></div> : <button className={styles.confirm} type="button" onClick={() => setConfirmed(true)}>Confirm this squad</button>}
+          {confirmed ? <div className={styles.confirmed} role="status"><strong>Squad confirmed for this tab</strong><span>It is ready for scenario planning and has not been written to the database.</span><Link href="/planning">Continue to Planning →</Link></div> : <button className={styles.confirm} type="button" onClick={confirmSquad}>Confirm this squad</button>}
         </section>}
 
         {error && <p className={styles.error} role="alert">{error}</p>}

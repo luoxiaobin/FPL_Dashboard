@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PlanningScenario } from '@/server/planning/types';
 import styles from './PlanningWorkspace.module.css';
+import { readConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 interface PlayerSummary {
   id: number;
@@ -23,6 +24,9 @@ interface WorkspacePayload {
   deadline: string;
   capturedAt: string;
   freshUntil: string;
+  squadSource: 'authenticated-import' | 'public-gameweek';
+  sourceCapturedAt: string;
+  transferState: { freeTransfers: number | null; unlimited: boolean };
   scenarios: PlanningScenario[];
   players: Record<string, PlayerSummary>;
 }
@@ -43,15 +47,18 @@ export default function PlanningWorkspace() {
   const [maxHit, setMaxHit] = useState(0);
   const [bankReserve, setBankReserve] = useState(0);
   const [savedPlan, setSavedPlan] = useState<string | null>(null);
+  const [usingConfirmedSquad, setUsingConfirmedSquad] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
+      const importedSquad = readConfirmedFplSquad();
+      setUsingConfirmedSquad(Boolean(importedSquad));
       const response = await fetch('/api/v1/planning/scenarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ constraints: {
+        body: JSON.stringify({ importedSquad: importedSquad ?? undefined, constraints: {
           lockedPlayerIds: parseIds(locked),
           excludedPlayerIds: parseIds(excluded),
           maxPointsHit: maxHit,
@@ -102,8 +109,8 @@ export default function PlanningWorkspace() {
       </header>
 
       <section className={styles.importCard} aria-labelledby="current-squad-title">
-        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">Use your current FPL picks</h2><p>Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.</p></div>
-        <Link href="/planning/import">Set up squad import</Link>
+        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">{usingConfirmedSquad ? 'Confirmed squad connected' : 'Use your current FPL picks'}</h2><p>{usingConfirmedSquad ? `Planning is using the squad you reviewed in this Safari tab.${data?.transferState?.unlimited ? ' Unlimited changes are modeled with no points hit.' : ''}` : 'Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.'}</p></div>
+        <Link href="/planning/import">{usingConfirmedSquad ? 'Refresh squad' : 'Set up squad import'}</Link>
       </section>
 
       <section className={styles.constraints} aria-labelledby="constraints-title">

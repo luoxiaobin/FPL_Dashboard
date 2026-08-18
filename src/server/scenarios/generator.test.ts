@@ -56,4 +56,16 @@ describe('generatePlanningScenarios', () => {
     expect(scenarios.every(scenario => scenario.transferHit <= 4)).toBe(true);
     expect(scenarios.every(scenario => scenario.transfers.length <= 2)).toBe(true);
   });
+
+  it('uses multiple improvements without hits during unlimited pre-season changes', () => {
+    const scenarios = generatePlanningScenarios(
+      squad,
+      [player(16, 2, 8, 50), player(17, 3, 9, 48), player(18, 4, 10, 46)],
+      10,
+      DEFAULT_PLANNING_CONSTRAINTS,
+      { freeTransfers: 0, unlimited: true },
+    );
+    expect(scenarios.every(scenario => scenario.transferHit === 0)).toBe(true);
+    expect(scenarios.some(scenario => scenario.transfers.length > 1)).toBe(true);
+  });
 });

@@ -25,3 +25,7 @@ Prices remain in FPL's integer tenths representation at this boundary. Conversio
 - Contract changes require a new schema version rather than silently changing meaning.
 - Imported data is not persisted in Phase 1.
 - Freshness, player metadata reconciliation, club/position rules, and scenario integration remain downstream concerns.
+
+## Phase 4 integration
+
+After explicit review, the encoded contract may be retained in `sessionStorage` for the current tab only. The authenticated planning endpoint parses the contract again, requires its entry ID to match the server session, rejects captures older than two hours, verifies all players against current bootstrap data, and enforces squad composition, club limits, and starting-formation rules. Only then may the imported picks replace the unavailable public picks response for scenario generation. Unlimited pre-season transfers are modeled without points hits. No durable storage is introduced by this phase.

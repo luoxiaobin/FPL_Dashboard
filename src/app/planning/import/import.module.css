@@ -33,4 +33,5 @@
 .confirm { width: 100%; min-height: 50px; margin-top: 22px; border: 0; border-radius: 10px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
 .confirmed { display: grid; gap: 4px; margin-top: 22px; padding: 16px; border: 1px solid #2d6844; border-radius: 12px; color: #62d98b; background: #0c2115; }
 .confirmed span { color: #a8b9ae; }
+.confirmed a { min-height: 44px; padding-top: 10px; color: #62d98b; font-weight: 800; }
 @media (max-width: 680px) { .page { padding: 16px; } .card { margin: 0; padding: 20px; } .success dl, .playerGrid { grid-template-columns: 1fr; } .reviewHeader { align-items: flex-start; flex-direction: column; } }

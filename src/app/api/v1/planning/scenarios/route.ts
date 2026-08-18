@@ -7,6 +7,8 @@ import {
   DEFAULT_PLANNING_CONSTRAINTS,
   type PlanningConstraints,
 } from '@/server/planning/types';
+import { parseFplSquadImport, FplSquadImportValidationError } from '@/lib/fplSquadImport';
+import { PlanningSquadValidationError } from '@/server/planning/importedSquad';
 
 const numericIds = (value: unknown): number[] => Array.isArray(value)
   ? [...new Set(value.filter(item => Number.isInteger(item) && Number(item) > 0).map(Number))].slice(0, 50)
@@ -35,10 +37,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const constraints = parseConstraints(body?.constraints ?? DEFAULT_PLANNING_CONSTRAINTS);
-    const workspace = await buildPlanningWorkspace(Number(entryId), constraints);
+    const importedSquad = body?.importedSquad === undefined ? undefined : parseFplSquadImport(body.importedSquad);
+    const workspace = await buildPlanningWorkspace(Number(entryId), constraints, importedSquad);
     return NextResponse.json(workspace);
   } catch (error) {
     console.error('Planning workspace error:', error);
+    if (error instanceof FplSquadImportValidationError) {
+      return NextResponse.json({ error: 'The confirmed squad payload is invalid. Import it again.' }, { status: 400 });
+    }
+    if (error instanceof PlanningSquadValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
+    }
     if (error instanceof FplUpstreamError && error.status === 404) {
       return NextResponse.json({
         error: 'Your current squad is not public yet. Scenario planning becomes available after the Gameweek deadline.',

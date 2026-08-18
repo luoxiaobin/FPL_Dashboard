@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { encodeFplSquadImport, type FplSquadImport } from '@/lib/fplSquadImport';
 import FplSquadImportPage from './page';
+import { readConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  sessionStorage.clear();
   window.history.replaceState(null, '', '/');
 });
 
@@ -56,5 +58,7 @@ describe('FPL squad import setup', () => {
     expect(await screen.findByText('Player 1')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Confirm this squad' }));
     expect(screen.getByText('Squad confirmed for this tab')).toBeTruthy();
+    expect(readConfirmedFplSquad()?.entryId).toBe(3_376_378);
+    expect(screen.getByRole('link', { name: /Continue to Planning/ })).toBeTruthy();
   });
 });

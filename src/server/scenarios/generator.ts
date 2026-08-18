@@ -9,6 +9,13 @@ import { PROJECTION_MODEL_VERSION } from '@/server/projections/model';
 
 const STRATEGIES: ScenarioStrategy[] = ['floor', 'balanced', 'upside'];
 
+export interface PlanningTransferContext {
+  freeTransfers: number;
+  unlimited: boolean;
+}
+
+const DEFAULT_TRANSFER_CONTEXT: PlanningTransferContext = { freeTransfers: 1, unlimited: false };
+
 const strategyScore = (player: PlayerProjection, strategy: ScenarioStrategy) => {
   if (strategy === 'floor') return player.floor;
   if (strategy === 'upside') return player.ceiling;
@@ -87,11 +94,14 @@ function buildScenario(
   bank: number,
   constraints: PlanningConstraints,
   strategy: ScenarioStrategy,
+  transferContext: PlanningTransferContext,
 ): PlanningScenario {
   let squad = [...initialSquad];
   let bankRemaining = bank;
   const transfers: Array<{ out: PlayerProjection; incoming: PlayerProjection; gain: number }> = [];
-  const maxTransfers = 1 + Math.floor(constraints.maxPointsHit / 4);
+  const maxTransfers = Math.min(5, transferContext.unlimited
+    ? 5
+    : transferContext.freeTransfers + Math.floor(constraints.maxPointsHit / 4));
   for (let transferIndex = 0; transferIndex < maxTransfers; transferIndex += 1) {
     const transfer = bestSingleTransfer(squad, candidates, bankRemaining, constraints, strategy);
     if (!transfer || (transferIndex > 0 && transfer.gain <= 4)) break;
@@ -99,7 +109,9 @@ function buildScenario(
     bankRemaining += transfer.out.sellingPrice - transfer.incoming.price;
     transfers.push(transfer);
   }
-  const transferHit = Math.max(0, transfers.length - 1) * 4;
+  const transferHit = transferContext.unlimited
+    ? 0
+    : Math.max(0, transfers.length - transferContext.freeTransfers) * 4;
   const starters = chooseStartingEleven(squad, strategy);
   const starterIds = new Set(starters.map(player => player.id));
   const bench = squad
@@ -158,8 +170,9 @@ export function generatePlanningScenarios(
   candidates: PlayerProjection[],
   bank: number,
   constraints: PlanningConstraints,
+  transferContext: PlanningTransferContext = DEFAULT_TRANSFER_CONTEXT,
 ): PlanningScenario[] {
   if (squad.length !== 15) throw new Error('A planning squad must contain exactly 15 players');
   if (!respectsClubLimit(squad)) throw new Error('The source squad violates the three-player club limit');
-  return STRATEGIES.map(strategy => buildScenario(squad, candidates, bank, constraints, strategy));
+  return STRATEGIES.map(strategy => buildScenario(squad, candidates, bank, constraints, strategy, transferContext));
 }
