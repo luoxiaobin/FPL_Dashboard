@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getEntryIdFromSession } from '@/lib/session';
 import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
+import { resolveRelevantGameweek, squadUnpublishedPayload } from '@/lib/fplAvailability';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +21,8 @@ export async function POST(req: NextRequest) {
 
     const bootstrap = await bootstrapRes.json();
     const teamMap = new Map(bootstrap.teams.map((t: any) => [t.id, { code: t.code, short_name: t.short_name }]));
-    const currentGWData = bootstrap.events.find((e: any) => e.is_current) || bootstrap.events[0];
+    const currentGWData = resolveRelevantGameweek(bootstrap.events);
+    if (!currentGWData) return NextResponse.json({ error: 'No gameweek available' }, { status: 404 });
     const targetGW = (currentGWData.finished && currentGWData.id < 38) ? currentGWData.id + 1 : currentGWData.id;
 
     // 2. Fetch user's picks for current GW
@@ -28,8 +30,14 @@ export async function POST(req: NextRequest) {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 
+    if (picksRes.status === 404 && currentGWData.is_next) {
+        return NextResponse.json({
+          ...squadUnpublishedPayload(currentGWData),
+          suggestions: [],
+        });
+    }
     if (!picksRes.ok) {
-        return NextResponse.json({ error: 'Failed to fetch squad data' }, { status: 500 });
+        throw new Error(`Failed to fetch squad data (${picksRes.status})`);
     }
     const picksData = await picksRes.json();
 

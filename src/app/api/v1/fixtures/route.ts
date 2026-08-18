@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { buildClubFormMap } from '@/lib/clubForm';
 import { getEntryIdFromSession } from '@/lib/session';
 import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
+import { resolveRelevantGameweek, squadUnpublishedPayload } from '@/lib/fplAvailability';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,8 +21,7 @@ export async function GET(req: NextRequest) {
     const allFixtures = await fixturesRes.json();
 
     // Find current GW
-    const currentGWData = bootstrap.events.find((e: any) => e.is_current) ||
-                      bootstrap.events.find((e: any) => e.is_next);
+    const currentGWData = resolveRelevantGameweek(bootstrap.events);
     if (!currentGWData) return NextResponse.json({ error: 'No active gameweek' }, { status: 404 });
 
     const currentGW = currentGWData.id;
@@ -81,7 +81,14 @@ export async function GET(req: NextRequest) {
     const picksRes = await fplFetch(`/api/entry/${entryId}/event/${toSafeId(currentGW, 'gameweek')}/picks/`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    if (!picksRes.ok) throw new Error('Failed to fetch picks');
+    if (picksRes.status === 404 && currentGWData.is_next) {
+      return NextResponse.json({
+        ...squadUnpublishedPayload(currentGWData),
+        players: [],
+        nextGWs,
+      });
+    }
+    if (!picksRes.ok) throw new Error(`Failed to fetch picks (${picksRes.status})`);
     const picksData = await picksRes.json();
 
     const elementsMap = new Map(bootstrap.elements.map((el: any) => [el.id, el]));

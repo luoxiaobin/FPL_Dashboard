@@ -2,6 +2,16 @@ name: Playwright Full Regression
 
 on:
   workflow_dispatch: # Allows manual trigger anytime for full functional regression
+    inputs:
+      run_live_fpl:
+        description: Run the opt-in authenticated live FPL pipeline check
+        required: false
+        type: boolean
+        default: false
+      live_base_url:
+        description: HTTPS FPL Dashboard deployment used by the live check
+        required: false
+        type: string
   release:
     types: [published] # Automatically run on full release tags
 
@@ -16,13 +26,39 @@ jobs:
         node-version: lts/*
     - name: Install dependencies
       run: npm ci
+    - name: Reject tracked Playwright authentication state
+      run: |
+        test -z "$(git ls-files playwright/.auth)"
+        git check-ignore -q playwright/.auth/fpl.json
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
+      env:
+        RUN_LIVE_FPL_E2E: ${{ inputs.run_live_fpl && 'true' || 'false' }}
+        PLAYWRIGHT_LIVE_BASE_URL: ${{ inputs.live_base_url }}
+        LIVE_FPL_ENTRY_ID: ${{ secrets.LIVE_FPL_ENTRY_ID }}
       run: npm run test:e2e
-    - uses: actions/upload-artifact@v4
+    - name: Upload Playwright HTML report
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: playwright-report
         path: playwright-report/
+        if-no-files-found: error
         retention-days: 30
+    - name: Upload Playwright failure evidence
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-failure-evidence
+        path: test-results/artifacts/
+        if-no-files-found: error
+        retention-days: 30
+    - name: Upload Healer history
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-healing-history
+        path: test-results/healing-history.json
+        if-no-files-found: error
+        retention-days: 90

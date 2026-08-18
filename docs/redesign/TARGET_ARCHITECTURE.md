@@ -4,7 +4,8 @@
 
 ```text
 FPL upstream
-  -> typed FPL gateway
+  -> public typed FPL gateway
+  -> user-invoked browser connector for authenticated pre-deadline reads
   -> normalized, versioned snapshots
   -> projection engine
   -> legal optimizer
@@ -14,6 +15,8 @@ FPL upstream
 ```
 
 UI code does not fetch official FPL endpoints directly. Projection and optimization code does not depend on Next.js or Supabase clients. Persistence stores source snapshots and model versions so a generated plan can be reproduced.
+
+The browser connector is the deliberate exception to the first rule: it runs only on the official FPL origin after manager invocation, reduces authenticated current-team data to the strict import contract, and sends no credential or session material to the dashboard. See ADR 004.
 
 ## Server boundaries
 
@@ -47,3 +50,4 @@ The legacy dashboard remains available while `planning_workspace_v1` is rolled o
 - My Plan is device-local until verified application identity and server persistence are introduced.
 - Production access remains disabled unless `PLANNING_WORKSPACE_V1=true`.
 - Pre-deadline squad access depends on a manager-invoked bookmark because FPL offers no third-party OAuth; official public picks take over automatically after the deadline.
+- The connector is read-only. Recommendations are not written to the official FPL account; any future guided write-back requires a separate ADR and legal/terms review.

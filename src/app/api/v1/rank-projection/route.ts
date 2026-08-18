@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEntryIdFromSession } from '@/lib/session';
 import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
+import { squadUnpublishedPayload } from '@/lib/fplAvailability';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,6 +20,10 @@ export async function GET(req: NextRequest) {
 
     const currentGW = bootstrap.events.find((e: any) => e.is_current);
     if (!currentGW) {
+      const nextGW = bootstrap.events.find((e: any) => e.is_next);
+      if (nextGW) {
+        return NextResponse.json(squadUnpublishedPayload(nextGW));
+      }
       return NextResponse.json({ status: 'no_active_gw', message: 'No active gameweek right now.' });
     }
 

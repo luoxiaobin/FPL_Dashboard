@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PlanningScenario } from '@/server/planning/types';
 import styles from './PlanningWorkspace.module.css';
-import { clearConfirmedFplSquad, readConfirmedFplSquad } from '@/lib/fplSquadSession';
+import { clearConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 interface PlayerSummary {
   id: number;
@@ -53,12 +53,10 @@ export default function PlanningWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const importedSquad = readConfirmedFplSquad();
-      setUsingConfirmedSquad(Boolean(importedSquad));
       const response = await fetch('/api/v1/planning/scenarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ importedSquad: importedSquad ?? undefined, constraints: {
+        body: JSON.stringify({ constraints: {
           lockedPlayerIds: parseIds(locked),
           excludedPlayerIds: parseIds(excluded),
           maxPointsHit: maxHit,

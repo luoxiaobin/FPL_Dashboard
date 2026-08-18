@@ -11,7 +11,6 @@ import {
   type FplSquadReviewPlayer,
 } from '@/lib/fplSquadReview';
 import styles from './import.module.css';
-import { saveConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 export default function FplSquadImportPage() {
   const [origin, setOrigin] = useState('');
@@ -78,7 +77,6 @@ export default function FplSquadImportPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body?.error ?? 'Unable to save confirmed squad');
-      saveConfirmedFplSquad(result);
       setConfirmed(true);
       setExpiresAt(typeof body.expiresAt === 'string' ? body.expiresAt : null);
       setError(null);

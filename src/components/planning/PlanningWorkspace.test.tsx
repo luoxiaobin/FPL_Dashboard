@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import PlanningWorkspace from './PlanningWorkspace';
-import { readConfirmedFplSquad, saveConfirmedFplSquad } from '@/lib/fplSquadSession';
-import type { FplSquadImport } from '@/lib/fplSquadImport';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
@@ -73,17 +71,7 @@ describe('PlanningWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Saved as My Plan' })).toBeTruthy();
   });
 
-  it('submits a tab-confirmed squad to scenario planning', async () => {
-    const importedSquad: FplSquadImport = {
-      schemaVersion: 1, source: 'fpl-authenticated-my-team', entryId: 42,
-      capturedAt: new Date().toISOString(), activeChip: null,
-      picks: Array.from({ length: 15 }, (_, index) => ({
-        elementId: index + 1, lineupPosition: index + 1, sellingPrice: 50, purchasePrice: 50,
-        multiplier: index < 11 ? (index === 0 ? 2 : 1) : 0, isCaptain: index === 0, isViceCaptain: index === 1,
-      })),
-      transfers: { bank: 15, squadValue: 1_015, freeTransfers: 1, transfersMade: 0, transferCost: 0, status: 'cost' },
-    };
-    saveConfirmedFplSquad(importedSquad);
+  it('uses the server-confirmed squad without resending it from browser storage', async () => {
     const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
@@ -92,10 +80,9 @@ describe('PlanningWorkspace', () => {
     render(<PlanningWorkspace />);
     await screen.findByText('Confirmed squad connected');
     const request = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(request.importedSquad.entryId).toBe(42);
-    expect(request.importedSquad.picks).toHaveLength(15);
+    expect(request).not.toHaveProperty('importedSquad');
+    expect(request.constraints).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Clear saved squad' }));
     expect(await screen.findByText(/Saved squad cleared/)).toBeTruthy();
-    expect(readConfirmedFplSquad()).toBeNull();
   });
 });
