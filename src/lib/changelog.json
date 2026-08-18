@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.5",
+    "date": "2026-08-18",
+    "title": "Local Squad Review and Confirmation",
+    "changes": [
+      "Resolves imported player names, clubs, positions, and selling prices against a public cached catalogue.",
+      "Displays starting XI, bench order, captain, and vice captain before accepting the squad.",
+      "Keeps squad IDs fragment-local and confirmation tab-local with no durable persistence."
+    ]
+  },
+  {
     "version": "0.6.4",
     "date": "2026-08-18",
     "title": "Complete Squad Bookmarklet",

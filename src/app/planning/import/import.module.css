@@ -17,4 +17,20 @@
 .error { padding: 12px; border: 1px solid #8b3a3a; border-radius: 10px; color: #ffb4b4; background: #2b1010; }
 .privacy { padding-top: 14px; border-top: 1px solid #1c3529; font-size: .82rem; }
 .back { display: inline-block; min-height: 44px; padding: 12px 0; color: #62d98b; font-weight: 700; }
-@media (max-width: 560px) { .page { padding: 16px; } .card { margin: 0; padding: 20px; } .success dl { grid-template-columns: 1fr; } }
+.loading { margin: 18px 0; padding: 16px; border-radius: 12px; color: #a8b9ae; background: #07110d; }
+.review { margin-top: 24px; padding-top: 24px; border-top: 1px solid #254536; }
+.reviewHeader { display: flex; justify-content: space-between; gap: 18px; align-items: end; }
+.reviewHeader h2 { margin: 4px 0; font-size: 1.8rem; }
+.reviewHeader > span { color: #82998b; font-size: .75rem; }
+.review h3 { margin: 22px 0 10px; color: #a8b9ae; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+.playerGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.player { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 12px; border: 1px solid #1c3529; border-radius: 10px; background: #07110d; }
+.player strong, .player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player small { margin-top: 3px; color: #82998b; }
+.position { color: #62d98b; font-size: .72rem; font-weight: 800; }
+.badges { display: flex; gap: 4px; }
+.badges b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #041008; background: #62d98b; font-size: .72rem; }
+.confirm { width: 100%; min-height: 50px; margin-top: 22px; border: 0; border-radius: 10px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
+.confirmed { display: grid; gap: 4px; margin-top: 22px; padding: 16px; border: 1px solid #2d6844; border-radius: 12px; color: #62d98b; background: #0c2115; }
+.confirmed span { color: #a8b9ae; }
+@media (max-width: 680px) { .page { padding: 16px; } .card { margin: 0; padding: 20px; } .success dl, .playerGrid { grid-template-columns: 1fr; } .reviewHeader { align-items: flex-start; flex-direction: column; } }

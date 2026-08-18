@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { encodeFplSquadImport, type FplSquadImport } from '@/lib/fplSquadImport';
 import FplSquadImportPage from './page';
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   window.history.replaceState(null, '', '/');
 });
 
@@ -36,11 +37,24 @@ describe('FPL squad import setup', () => {
   });
 
   it('validates transported data and immediately clears the URL fragment', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ players: Array.from({ length: 15 }, (_, index) => ({
+        id: index + 101,
+        name: `Player ${index + 1}`,
+        teamId: (index % 5) + 1,
+        teamName: `Club ${(index % 5) + 1}`,
+        position: index === 0 || index === 11 ? 'GKP' : index < 6 ? 'DEF' : index < 11 ? 'MID' : 'FWD',
+      })) }),
+    })));
     window.history.replaceState(null, '', `/planning/import#data=${encodeFplSquadImport(payload)}`);
     render(<FplSquadImportPage />);
     expect(await screen.findByText('Complete squad transport passed')).toBeTruthy();
     expect(screen.getByText('3376378')).toBeTruthy();
     expect(screen.getByText('15')).toBeTruthy();
     expect(window.location.hash).toBe('');
+    expect(await screen.findByText('Player 1')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm this squad' }));
+    expect(screen.getByText('Squad confirmed for this tab')).toBeTruthy();
   });
 });

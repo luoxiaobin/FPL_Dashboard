@@ -4,6 +4,12 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { buildFplSquadBookmarklet } from '@/lib/fplSquadBookmarklet';
 import { decodeFplSquadImport, type FplSquadImport } from '@/lib/fplSquadImport';
+import {
+  parseFplPlayerCatalog,
+  resolveFplSquadReview,
+  type FplSquadReview,
+  type FplSquadReviewPlayer,
+} from '@/lib/fplSquadReview';
 import styles from './import.module.css';
 
 export default function FplSquadImportPage() {
@@ -11,6 +17,8 @@ export default function FplSquadImportPage() {
   const [result, setResult] = useState<FplSquadImport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [review, setReview] = useState<FplSquadReview | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     const hydrateFromLocation = () => {
@@ -28,6 +36,24 @@ export default function FplSquadImportPage() {
     return () => window.clearTimeout(timeout);
   }, []);
 
+  useEffect(() => {
+    if (!result) return;
+    let cancelled = false;
+    const loadCatalog = async () => {
+      try {
+        const response = await fetch('/api/v1/planning/player-catalog');
+        if (!response.ok) throw new Error('Unable to load the current FPL player catalogue');
+        const body = await response.json();
+        const resolved = resolveFplSquadReview(result, parseFplPlayerCatalog(body?.players));
+        if (!cancelled) setReview(resolved);
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to resolve player details');
+      }
+    };
+    void loadCatalog();
+    return () => { cancelled = true; };
+  }, [result]);
+
   const bookmarklet = useMemo(() => origin ? buildFplSquadBookmarklet(origin) : '', [origin]);
   const copyBookmarklet = async () => {
     try {
@@ -42,7 +68,7 @@ export default function FplSquadImportPage() {
   return (
     <main className={styles.page}>
       <section className={styles.card}>
-        <p className={styles.eyebrow}>Phase 2 · authenticated squad transport</p>
+        <p className={styles.eyebrow}>Phase 3 · local squad review</p>
         <h1>Connect your current FPL squad</h1>
         <p className={styles.intro}>Install this private Safari bookmark once, then run it from FPL’s signed-in Pick Team page whenever you want a fresh pre-deadline squad.</p>
 
@@ -54,7 +80,7 @@ export default function FplSquadImportPage() {
             <div><dt>Schema</dt><dd>v{result.schemaVersion}</dd></div>
             <div><dt>Bank</dt><dd>£{(result.transfers.bank / 10).toFixed(1)}m</dd></div>
           </dl>
-          <p>The fragment was cleared immediately. Nothing was saved; player review and confirmation arrive in Phase 3.</p>
+          <p>The fragment was cleared immediately. Your squad remains local to this tab and has not been saved.</p>
         </div> : <>
           <ol className={styles.steps}>
             <li>Click <strong>Copy complete bookmark code</strong>.</li>
@@ -66,10 +92,30 @@ export default function FplSquadImportPage() {
           <details><summary>Show manual bookmark code</summary><textarea aria-label="Complete bookmark code" readOnly value={bookmarklet} rows={8} /></details>
         </>}
 
+        {result && !review && !error && <div className={styles.loading} role="status">Resolving player names from the public FPL catalogue…</div>}
+
+        {review && <section className={styles.review} aria-labelledby="review-title">
+          <div className={styles.reviewHeader}><div><p className={styles.eyebrow}>Local review</p><h2 id="review-title">Confirm this is your squad</h2></div><span>{new Date(result!.capturedAt).toLocaleString()}</span></div>
+          <h3>Starting XI</h3>
+          <div className={styles.playerGrid}>{review.startingEleven.map(player => <PlayerRow key={player.id} player={player} />)}</div>
+          <h3>Bench</h3>
+          <div className={styles.playerGrid}>{review.bench.map(player => <PlayerRow key={player.id} player={player} />)}</div>
+          {confirmed ? <div className={styles.confirmed} role="status"><strong>Squad confirmed for this tab</strong><span>Nothing has been stored yet. Planning integration follows in Phase 4.</span></div> : <button className={styles.confirm} type="button" onClick={() => setConfirmed(true)}>Confirm this squad</button>}
+        </section>}
+
         {error && <p className={styles.error} role="alert">{error}</p>}
         <p className={styles.privacy}>The bookmark sends only the validated squad contract. It never reads or copies your FPL password, cookies, or session token.</p>
         <Link className={styles.back} href="/planning">← Return to Planning</Link>
       </section>
     </main>
   );
+}
+
+function PlayerRow({ player }: { player: FplSquadReviewPlayer }) {
+  return <div className={styles.player}>
+    <span className={styles.position}>{player.position}</span>
+    <span><strong>{player.name}</strong><small>{player.teamName}</small></span>
+    <span className={styles.badges}>{player.isCaptain && <b>C</b>}{player.isViceCaptain && <b>V</b>}</span>
+    <span>£{(player.sellingPrice / 10).toFixed(1)}m</span>
+  </div>;
 }
