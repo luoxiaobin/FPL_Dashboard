@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.6.1",
+    "date": "2026-08-17",
+    "title": "Mobile Launch Readiness",
+    "changes": [
+      "Completed the production mobile acceptance pass for the Planning workspace",
+      "Standardized Planning inputs, selectors, and actions on 44px minimum touch targets",
+      "Improved release badge and modal close-button accessibility on mobile",
+      "Stabilized the dashboard authentication-gate regression test"
+    ]
+  },
+  {
     "version": "0.6.0",
     "date": "2026-08-17",
     "title": "2026–27 Planning Workspace Launch",

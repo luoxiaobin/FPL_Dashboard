@@ -7,7 +7,7 @@ afterEach(cleanup);
 describe('BuildInfo', () => {
   it('shows an exact release and deployment identity', () => {
     render(<BuildInfo release={{
-      version: '0.6.0',
+      version: '0.6.1',
       commitSha: 'abcdef1234567890',
       shortCommitSha: 'abcdef1',
       environment: 'production',
@@ -15,9 +15,9 @@ describe('BuildInfo', () => {
       deploymentId: 'dpl_example',
     }} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Release v0.6.0/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Release v0.6.1/ }));
 
-    expect(screen.getAllByText('v0.6.0').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('v0.6.1').length).toBeGreaterThan(0);
     expect(screen.getByText('production')).toBeTruthy();
     expect(screen.getByText('abcdef1')).toBeTruthy();
     expect(screen.getByText('dpl_example')).toBeTruthy();
