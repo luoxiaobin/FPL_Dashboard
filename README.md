@@ -1,187 +1,229 @@
 # FPL Dashboard
 
-An all-in-one Fantasy Premier League dashboard for managers who want live clarity, smarter weekly decisions, and better context than the official interface provides on its own.
+FPL Dashboard is a weekly planning and decision-support tool for Fantasy Premier League managers who want to improve their overall rank.
 
-Built with Next.js, React, TypeScript, and Supabase, the app combines live score tracking, rank movement, fixture intelligence, captaincy suggestions, transfer review, and league context in a single dark-mode dashboard.
+It starts with the manager's real current squad—even before the Gameweek deadline—and turns official FPL data into complete five-Gameweek plans with transfers, lineups, captaincy, projected outcomes, uncertainty, and explicit tradeoffs.
 
-## Live production URL
+**Production:** https://fpl-dashboard-seven-pi.vercel.app/
 
-https://fpl-dashboard-seven-pi.vercel.app/
+## Updated vision
 
-### Key Features
+The product is evolving from an all-in-one matchday dashboard into a focused FPL decision workspace:
 
-* **Public Team ID Authentication:** Securely built on top of the Public FPL Protocol. Simply enter your official numeric FPL Team ID to immediately load your entire dashboard—no email, passwords, or cookies required.
-* **Season Trajectory 2.0 (Recharts):** Advanced dual-axis visualization with Logarithmic Rank scaling, Team Value trends, Average Points benchmarks, and tactical Chip markers (WC, BB, TC, FH).
-* **Mini-League Battleground:** Real-time Rival Gaps Analysis to identify ownership differentials and point deficits against league competitors.
-* **Intelligent Fixture Ticker:** Squad-wide fixture difficulty mapping including player metadata (Club, Form, Position, Injury Status) and heat-mapped intensity.
-* **Live Squad Pitch:** A visual 15-man roster pitch that maps out your active starting XI alongside their live match minutes, BPS, and points.
-* **Bonus Point System (BPS) Radar:** Our intelligent API parser flags high-performing players with golden `[X bps]` indicators or confirmed `[+X B]` markers dynamically across your pitch array during live matches.
-* **Digital Transfer Analyser:** Deep-dive into historical transfer impact, tracking points-hit costs vs. performance gains.
+> Given my actual squad and the information available now, what are the strongest legal paths over the next five Gameweeks?
 
-## Why it exists
+The primary user is a serious, rank-focused manager. Mini-league and rival information can provide context, but the optimizer does not assume a mini-league and does not optimize against individual rivals. Better overall-rank decisions naturally carry into smaller leagues.
 
-The official FPL experience is powerful, but fragmented:
+The product does not hide uncertainty or manufacture one definitive answer. It presents complete scenarios, explains their tradeoffs, and lets the manager choose **My Plan**.
 
-- live points sit in one place
-- planning sits somewhere else
-- rank context is limited during a gameweek
-- fixture planning and transfer reflection are manual
+## The redesign
 
-This dashboard is designed to bring those decisions into one view.
+### This Week planning workspace
 
-## Current feature set
+The redesigned `/planning` workspace compares three complete five-Gameweek strategies:
 
-### Live matchday dashboard
-- live / provisional / official gameweek score lifecycle
-- overall rank snapshot
-- bank balance and team value
-- transfers available
+- **Floor** — emphasizes minutes security, availability, consistency, and downside protection.
+- **Balanced** — maximizes expected points under the current model.
+- **Upside** — accepts more variance in exchange for a higher ceiling.
 
-### Squad and scoring intelligence
-- live squad pitch
-- captain and vice-captain handling
-- auto-sub style projected scoring logic
-- current-season club shirt visuals for player rendering consistency
+Each scenario includes:
 
-### Planning tools
-- 5-gameweek fixture ticker
-- fixture difficulty color coding
-- double gameweek detection
-- blank gameweek handling
-- explicit "no DGW/BGW in next 5 GWs" indicator when applicable
+- transfers and points-hit cost;
+- a legal 15-player squad;
+- starting XI and bench order;
+- captain and vice captain;
+- bank remaining;
+- Gameweek and five-Gameweek projections;
+- uncertainty and the scenario's principal tradeoff.
 
-### Decision support
-- captaincy adviser for the target gameweek
-- transfer optimizer (AI-driven expected gains analysis and tracked evaluation)
-- DGW/BGW-aware suggestions
-- market target suggestion
-- transfer analyser with hit cost and points impact
+Managers can constrain generation by locking players, excluding incoming targets, limiting points hits, and reserving money in the bank. When all three objectives converge on the same decisions, the workspace reports a robust recommendation and shows its floor, expected outcome, and ceiling instead of inventing artificial alternatives.
 
-### Context and history
-- rank projection
-- season trajectory charts
-- gameweek history
-- mini-league standings and live view
+### Pre-deadline FPL connection
 
-## Product positioning
+The pivotal redesign decision was adopting a **user-invoked Safari bookmarklet** as a browser-mediated, read-only FPL connector.
 
-This is best suited to:
+Before a deadline, FPL's public entry endpoints do not expose the manager's editable Pick Team squad, and FPL does not provide a supported third-party OAuth flow. The bookmarklet bridges that gap without asking FPL Dashboard to store the manager's FPL password or session:
 
-- rank-focused FPL managers
-- mini-league players who want faster weekly decisions
-- engaged casual players who want a better live dashboard than the official UI alone
+1. The manager signs into the official FPL site.
+2. They run the private bookmark from the FPL Pick Team page.
+3. Code on the FPL origin reads the manager's current team using the existing browser session.
+4. It reduces the response to a strict versioned contract containing only squad and planning fields.
+5. FPL Dashboard clears the transport fragment, validates the data, resolves player details, and displays all 15 players for review.
+6. Only after explicit confirmation is the squad saved for Planning.
 
-## Tech stack
+This gives the optimizer the manager's true pre-deadline squad, selling prices, bank, transfer state, captaincy, bench order, and active-chip state. Passwords, cookies, bearer tokens, and reusable FPL session material never cross into the dashboard.
 
-- Next.js 16
+The confirmed squad can be refreshed, replaced, or cleared. It expires shortly after the deadline, and official public Gameweek picks become authoritative automatically once FPL publishes them.
+
+The integration is intentionally read-only: the dashboard recommends and models FPL changes but does not submit transfers, activate chips, or update the official squad.
+
+## What is live today
+
+### Weekly decision support
+
+- authenticated pre-deadline current-squad import and confirmation;
+- Floor, Balanced, and Upside five-Gameweek scenarios;
+- legal transfer, budget, squad, formation, lineup, bench, and captaincy handling;
+- manager constraints and scenario regeneration;
+- risk-range and robust-convergence explanations;
+- device-local **My Plan** selection;
+- deadline, freshness, model-version, and release identity indicators.
+
+### Matchday and season context
+
+- live, provisional, and official Gameweek score lifecycle;
+- live 15-player squad pitch, minutes, points, captaincy, and bonus indicators;
+- overall-rank snapshots and rank projection;
+- fixture ticker with difficulty, blanks, and doubles;
+- captaincy and transfer analysis;
+- season trajectory, team value, chips, and Gameweek history;
+- mini-league standings and live context.
+
+### Production operations
+
+- revocable, hashed dashboard sessions rather than raw Team ID cookies;
+- strict authenticated-import validation and entry ownership checks;
+- Supabase row-level security and server-only persistence access;
+- release identity as `v<version> · <Git SHA>` in the UI and health response;
+- configuration, database, and official-FPL readiness checks;
+- hourly non-destructive production smoke testing;
+- GitHub Actions gates for lint, unit tests, and the optimized production build;
+- additive migrations and feature-flag rollback boundaries.
+
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+  Manager([Manager])
+
+  subgraph FPL[Official FPL]
+    Public[Public FPL endpoints]
+    Browser[Signed-in FPL browser]
+    Bookmarklet[User-invoked bookmarklet]
+  end
+
+  subgraph Dashboard[FPL Dashboard]
+    Review[Local squad review<br/>and confirmation]
+    Gateway[Validated planning workspace]
+    Projections[Versioned projections]
+    Scenarios[Legal scenario generation]
+    ThisWeek[This Week workspace]
+  end
+
+  Store[(Supabase<br/>confirmed pre-deadline import)]
+
+  Manager --> Browser
+  Browser --> Bookmarklet
+  Bookmarklet -->|Minimized squad contract| Review
+  Manager -->|Explicit confirmation| Review
+  Review --> Store
+
+  Public --> Gateway
+  Store -->|Fallback until public picks release| Gateway
+  Gateway --> Projections
+  Projections --> Scenarios
+  Scenarios --> ThisWeek
+  ThisWeek --> Manager
+```
+
+Official public picks take precedence once available. The confirmed import exists to make the otherwise inaccessible pre-deadline planning window useful.
+
+For the complete design, see:
+
+- [2026–27 as-built architecture and product design](docs/redesign/AS_BUILT_ARCHITECTURE_2026-27.md)
+- [V1 product specification](docs/redesign/PRODUCT_SPEC.md)
+- [Target architecture](docs/redesign/TARGET_ARCHITECTURE.md)
+- [ADR 003: Authenticated squad import contract](docs/redesign/adr/003-authenticated-squad-import-contract.md)
+- [ADR 004: Browser-mediated FPL integration](docs/redesign/adr/004-browser-mediated-fpl-integration.md)
+- [2026–27 launch runbook](docs/operations/2026-27-launch-runbook.md)
+
+## What comes next
+
+The next milestone is post-GW1 learning and reproducibility:
+
+1. Persist immutable season-aware source snapshots and generated scenarios.
+2. Preserve and label the last valid snapshot during upstream degradation.
+3. Persist **My Plan**, freeze it at the deadline, and evaluate decisions against outcomes.
+4. Calibrate projections by position and forecast horizon using observed results.
+5. Add chip opportunity modelling.
+6. Complete redesigned Squad, Players, Fixtures, and History workspaces.
+7. Add product telemetry and active failure notification.
+8. Expand regression coverage with captured, sanitized real-world FPL payloads.
+
+Automatic or unattended actions on the official FPL account are not on the approved roadmap. The near-term handoff remains explicit recommendations that the manager reviews and applies in FPL.
+
+## Technology
+
+- Next.js 16 App Router
 - React 19
 - TypeScript
-- Supabase
+- Supabase/Postgres
 - Recharts
-- CSS Modules
-- Vitest
+- CSS Modules and Tailwind/PostCSS tooling
+- Vitest and Testing Library
 - Playwright
+- GitHub Actions and Vercel
 
-## Project structure
+## Repository structure
 
-- [src/app](src/app) — App Router pages and API routes
-- [src/components](src/components) — dashboard UI modules
-- [src/lib](src/lib) — shared helpers, tests, changelog, Supabase client
-- [supabase](supabase) — schema and persistence setup
-
-## Key API surfaces
-
-- [src/app/api/v1/user/summary/route.ts](src/app/api/v1/user/summary/route.ts)
-- [src/app/api/v1/squad/live/route.ts](src/app/api/v1/squad/live/route.ts)
-- [src/app/api/v1/fixtures/route.ts](src/app/api/v1/fixtures/route.ts)
-- [src/app/api/v1/squad/optimize/route.ts](src/app/api/v1/squad/optimize/route.ts)
-- [src/app/api/v1/squad/suggestions/route.ts](src/app/api/v1/squad/suggestions/route.ts)
-- [src/app/api/v1/user/transfers/route.ts](src/app/api/v1/user/transfers/route.ts)
-- [src/app/api/v1/leagues/route.ts](src/app/api/v1/leagues/route.ts)
-- [src/app/api/v1/rank-projection/route.ts](src/app/api/v1/rank-projection/route.ts)
-- [src/app/api/v1/sync/route.ts](src/app/api/v1/sync/route.ts)
-- [src/app/api/v1/cron/evaluate/route.ts](src/app/api/v1/cron/evaluate/route.ts)
-
-## Security & Architecture
-
-- **Rate Limiting:** Next.js Edge Proxy (`src/proxy.ts`) enforces per-IP throttling at 30 requests per minute across all public proxy endpoints.
-- **Fast Caching:** Critical application endpoints strictly revalidate generic FPL assets sequentially on short TTL pulses, guaranteeing high performance under heavy dashboard viewing load.
+- [`src/app`](src/app) — App Router pages and product-oriented Route Handlers
+- [`src/components`](src/components) — dashboard and Planning UI
+- [`src/server`](src/server) — FPL gateway, planning validation, projections, and scenarios
+- [`src/lib`](src/lib) — shared contracts, sessions, release metadata, and helpers
+- [`supabase/migrations`](supabase/migrations) — additive persistence schema
+- [`scripts`](scripts) — production verification tooling
+- [`.github/workflows`](.github/workflows) — CI and scheduled smoke tests
+- [`docs/redesign`](docs/redesign) — product, architecture, and decision records
+- [`docs/testing`](docs/testing) — test strategy and operating guidance
 
 ## Local development
 
-Install dependencies:
+Install dependencies and start the development server:
 
 ```bash
 npm install
-```
-
-Run the dev server:
-
-```bash
 npm run dev
 ```
 
-Open the app at `http://localhost:3000`.
-
-### Planning workspace preview
-
-The scenario-based redesign is available at `/planning` in development. In production it is fail-closed behind:
+Open http://localhost:3000. The redesigned workspace is available at `/planning` in development. Production enables it explicitly with:
 
 ```text
 PLANNING_WORKSPACE_V1=true
 ```
 
-The first vertical slice generates Floor, Balanced, and Upside five-Gameweek plans from a public squad after its picks become available. See [the V1 product specification](docs/redesign/PRODUCT_SPEC.md), [target architecture](docs/redesign/TARGET_ARCHITECTURE.md), and the additive migration in `supabase/migrations/`.
+The application also requires the Supabase URL, anonymous key, and server-only service-role key used by the existing deployment configuration.
 
-`/api/v1/health` reports deployment configuration and official FPL upstream readiness. A degraded response is HTTP 503 by design.
-
-Run the non-destructive production smoke test after each deployment:
-
-```bash
-npm run test:smoke
-```
-
-Set `SMOKE_BASE_URL` to test another deployment. The smoke test verifies health, the Planning feature flag, unauthenticated API protection, and security headers without creating a session or changing production data.
-GitHub Actions also runs this check hourly and supports manual runs against a supplied deployment URL.
-
-Production deployment:
-
-https://fpl-dashboard-seven-pi.vercel.app/
-
-The fixed badge in the lower-right corner identifies the deployed release as `v<version> · <Git SHA>`. Click it to see the environment, branch, full deployment identity, and changelog. The same identity is returned by `/api/v1/health` under `release`.
-
-## Validation commands
+## Validation
 
 ```bash
 npm run lint
 npm run test
 npm run build
+npm run test:e2e:smoke
 npm run test:smoke
 ```
 
-## Documentation
+`npm run test:smoke` is non-destructive. It verifies production health, release identity, the Planning workspace and import contract, unauthenticated API protection, and security headers.
 
-- [Playwright testing handbook](docs/testing/PLAYWRIGHT_HANDBOOK.md) — testing purpose, architecture, coverage, security, CI, failure diagnosis, and extension guide
-- [Testing and documentation governance](docs/testing/TESTING_GOVERNANCE.md) — how features, bugs, experiments, and removals keep tests and documentation current
-- [Testing documentation index](docs/testing/README.md) — strategy, live integration, authentication setup, and pilot records
-- [RequirementTechSpec.md](RequirementTechSpec.md) — product requirements and technical specification
-- [implementation_plan.md](implementation_plan.md) — original implementation plan
-- [PRODUCT_OVERVIEW.md](PRODUCT_OVERVIEW.md) — audience, value proposition, and feature narrative
-- [ARCHITECTURE.md](ARCHITECTURE.md) — implementation architecture and data flow
-- [PROMOTION_COPY.md](PROMOTION_COPY.md) — launch messaging and outreach copy
+## Release and health
 
-## Roadmap
+The lower-right release badge identifies the deployed version and Git commit. The same identity is returned by:
 
-Near-term areas worth expanding:
+```text
+GET /api/v1/health
+```
 
-- richer rival-watch workflows
-- clearer mobile-first optimization across all panels
-- exportable reports and sharing assets
-- deeper transfer recommendation logic
-- stronger public launch collateral
+A healthy response requires configuration, Supabase, and the official FPL upstream to pass. A degraded response returns HTTP 503 by design.
+
+## Additional documentation
+
+- [Testing documentation index](docs/testing/README.md)
+- [Playwright testing handbook](docs/testing/PLAYWRIGHT_HANDBOOK.md)
+- [Testing and documentation governance](docs/testing/TESTING_GOVERNANCE.md)
+- [Legacy implementation architecture](ARCHITECTURE.md)
+- [Original implementation plan](implementation_plan.md)
+- [Original product overview](PRODUCT_OVERVIEW.md)
 
 ## Status
 
-The application is beyond MVP and already includes live tracking, planning, and historical analysis features suitable for early user promotion and feedback.
-
-Built for FPL managers who want one dashboard for live decisions, weekly planning, and season context.
+The 2026–27 Planning redesign and authenticated pre-deadline squad connection are live in production. The product is ready for weekly use and is now entering its learning, calibration, and reproducibility phase.
