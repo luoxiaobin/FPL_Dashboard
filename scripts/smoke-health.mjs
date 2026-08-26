@@ -23,6 +23,7 @@ export async function requestHealthyResponse(request, options = {}) {
   const wait = options.wait ?? sleep;
   const warn = options.warn ?? console.warn;
   let lastDiagnostic = 'no response received';
+  const failures = [];
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -35,12 +36,14 @@ export async function requestHealthyResponse(request, options = {}) {
         } catch {
           throw new Error(`Health returned invalid JSON; body: ${diagnostic.body || '<empty>'}`);
         }
-        return { response, body, attempt };
+        return { response, body, attempt, failures };
       }
       lastDiagnostic = diagnostic.message;
     } catch (error) {
       lastDiagnostic = error instanceof Error ? error.message : String(error);
     }
+
+    failures.push({ attempt, diagnostic: lastDiagnostic });
 
     if (attempt < attempts) {
       warn(`Health attempt ${attempt}/${attempts} failed (${lastDiagnostic}); retrying in ${backoffMs * attempt}ms`);
@@ -50,4 +53,3 @@ export async function requestHealthyResponse(request, options = {}) {
 
   throw new Error(`Health check failed after ${attempts} attempts. Last result: ${lastDiagnostic}`);
 }
-

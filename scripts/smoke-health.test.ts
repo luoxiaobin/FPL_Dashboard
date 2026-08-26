@@ -19,6 +19,10 @@ describe('requestHealthyResponse', () => {
 
     expect(result.attempt).toBe(2);
     expect(result.body.status).toBe('ready');
+    expect(result.failures).toEqual([{
+      attempt: 1,
+      diagnostic: expect.stringContaining('HTTP 503'),
+    }]);
     expect(request).toHaveBeenCalledTimes(2);
     expect(wait).toHaveBeenCalledWith(10);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('"fpl":"fail"'));

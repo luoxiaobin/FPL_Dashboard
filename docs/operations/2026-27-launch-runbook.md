@@ -8,7 +8,7 @@ Production is `https://fpl-dashboard-seven-pi.vercel.app`. Treat the release sho
 
 GitHub Actions runs lint, unit tests, and the optimized production build on every push. The production smoke workflow runs hourly and verifies:
 
-The health request uses three bounded attempts with increasing backoff. If every attempt fails, the workflow records the final HTTP status and a truncated response body for diagnosis.
+The health request uses three bounded attempts with increasing backoff. A recovered retry passes with a visible warning and diagnostic details rather than being silently dismissed. Scheduled runs retain seven days of compact health history; two recovered checks within the latest three runs escalate as an intermittent production issue. If every attempt fails, the workflow records the final HTTP status and a truncated response body and fails immediately.
 
 - configuration, Supabase, and the official FPL bootstrap endpoint;
 - the Planning page and authenticated-import contract;

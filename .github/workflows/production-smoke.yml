@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   smoke:
@@ -28,5 +29,82 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Restore recent health history
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            const latest = artifacts
+              .filter(artifact => artifact.name.startsWith('production-smoke-history-') && !artifact.expired)
+              .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))[0];
+            if (!latest) {
+              core.info('No prior production smoke history found; starting a new history.');
+              return;
+            }
+            const archive = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: latest.id,
+              archive_format: 'zip',
+            });
+            fs.writeFileSync('/tmp/production-smoke-history.zip', Buffer.from(archive.data));
+
+      - name: Extract recent health history
+        if: github.event_name == 'schedule'
+        run: |
+          mkdir -p .smoke
+          if [ -f /tmp/production-smoke-history.zip ]; then
+            unzip -o /tmp/production-smoke-history.zip -d .smoke
+          fi
+
       - name: Check production readiness
+        id: smoke
+        continue-on-error: true
+        env:
+          SMOKE_RESULT_FILE: .smoke/current.json
         run: node scripts/smoke-production.mjs
+
+      - name: Evaluate intermittent health
+        if: always() && github.event_name == 'schedule'
+        id: history
+        env:
+          SMOKE_RESULT_FILE: .smoke/current.json
+          SMOKE_HISTORY_FILE: .smoke/history.json
+        run: node scripts/smoke-history.mjs
+
+      - name: Save health history
+        if: always() && github.event_name == 'schedule'
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-history-${{ github.run_id }}
+          path: .smoke/history.json
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: warn
+
+      - name: Enforce production health policy
+        if: always()
+        env:
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          HISTORY_OUTCOME: ${{ steps.history.outcome }}
+          ESCALATE: ${{ steps.history.outputs.escalate }}
+          ESCALATION_REASON: ${{ steps.history.outputs.reason }}
+        run: |
+          if [ "$SMOKE_OUTCOME" != "success" ]; then
+            echo "Production readiness check failed."
+            exit 1
+          fi
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$HISTORY_OUTCOME" != "success" ]; then
+            echo "Production health history evaluation failed."
+            exit 1
+          fi
+          if [ "$ESCALATE" = "true" ]; then
+            echo "Intermittent production health threshold reached: $ESCALATION_REASON"
+            exit 1
+          fi

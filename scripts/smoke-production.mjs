@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { requestHealthyResponse } from './smoke-health.mjs';
 
 const baseUrl = (process.env.SMOKE_BASE_URL ?? 'https://fpl-dashboard-seven-pi.vercel.app').replace(/\/$/, '');
@@ -15,8 +17,19 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function workflowCommandValue(value) {
+  return value.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+}
+
+async function writeResult(result) {
+  const resultFile = process.env.SMOKE_RESULT_FILE;
+  if (!resultFile) return;
+  await mkdir(dirname(resultFile), { recursive: true });
+  await writeFile(resultFile, `${JSON.stringify(result, null, 2)}\n`);
+}
+
 async function run() {
-  const { response: health, body: healthBody, attempt: healthAttempt } = await requestHealthyResponse(
+  const { response: health, body: healthBody, attempt: healthAttempt, failures } = await requestHealthyResponse(
     () => request('/api/v1/health'),
     {
       attempts: process.env.SMOKE_HEALTH_ATTEMPTS,
@@ -29,6 +42,11 @@ async function run() {
   assert(healthBody.checks?.fpl === 'pass', 'FPL upstream check did not pass');
   assert(/^\d+\.\d+\.\d+$/.test(healthBody.release?.version ?? ''), 'Release version is missing');
   assert(healthBody.release?.shortCommitSha, 'Release commit is missing');
+
+  if (failures.length > 0) {
+    const details = failures.map(failure => `attempt ${failure.attempt}: ${failure.diagnostic}`).join(' | ');
+    console.warn(`::warning title=Production health recovered::${workflowCommandValue(details)}`);
+  }
 
   const planningPage = await request('/planning');
   assert(planningPage.status === 200, `Planning page returned ${planningPage.status}`);
@@ -78,9 +96,26 @@ async function run() {
   console.log('  confirmed import contract: ready');
   console.log('  protected APIs: reject unauthenticated requests');
   console.log('  security headers: present');
+
+  await writeResult({
+    timestamp: new Date().toISOString(),
+    status: failures.length > 0 ? 'degraded' : 'healthy',
+    attempts: healthAttempt,
+    failures,
+    release: healthBody.release,
+  });
 }
 
-run().catch((error) => {
+run().catch(async (error) => {
   console.error(`Production smoke test failed: ${error.message}`);
+  try {
+    await writeResult({
+      timestamp: new Date().toISOString(),
+      status: 'outage',
+      error: error.message,
+    });
+  } catch (writeError) {
+    console.error(`Could not write smoke result: ${writeError.message}`);
+  }
   process.exitCode = 1;
 });

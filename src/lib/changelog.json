@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.11",
+    "date": "2026-08-26",
+    "title": "Intermittent Outage Detection",
+    "changes": [
+      "Marks a health check that succeeds only after a retry as degraded and preserves its failure diagnostics.",
+      "Retains scheduled health history and escalates when two of the latest three checks recover from initial failures.",
+      "Keeps isolated transient failures as visible GitHub warnings while sustained outages continue to fail immediately."
+    ]
+  },
+  {
     "version": "0.6.10",
     "date": "2026-08-26",
     "title": "Resilient Production Health Monitoring",
