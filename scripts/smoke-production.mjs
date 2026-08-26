@@ -1,3 +1,5 @@
+import { requestHealthyResponse } from './smoke-health.mjs';
+
 const baseUrl = (process.env.SMOKE_BASE_URL ?? 'https://fpl-dashboard-seven-pi.vercel.app').replace(/\/$/, '');
 
 async function request(path, init) {
@@ -14,9 +16,13 @@ function assert(condition, message) {
 }
 
 async function run() {
-  const health = await request('/api/v1/health');
-  const healthBody = await health.json();
-  assert(health.status === 200, `Health returned ${health.status}`);
+  const { response: health, body: healthBody, attempt: healthAttempt } = await requestHealthyResponse(
+    () => request('/api/v1/health'),
+    {
+      attempts: process.env.SMOKE_HEALTH_ATTEMPTS,
+      backoffMs: process.env.SMOKE_HEALTH_BACKOFF_MS,
+    },
+  );
   assert(healthBody.status === 'ready', `Health status is ${healthBody.status}`);
   assert(healthBody.checks?.configuration === 'pass', 'Configuration check did not pass');
   assert(healthBody.checks?.database === 'pass', 'Database check did not pass');
@@ -66,6 +72,7 @@ async function run() {
 
   console.log(`Production smoke test passed: ${baseUrl}`);
   console.log(`  release: v${healthBody.release.version} · ${healthBody.release.shortCommitSha}`);
+  console.log(`  health attempts: ${healthAttempt}`);
   console.log('  health: configuration, database, and FPL ready');
   console.log('  planning page: enabled');
   console.log('  confirmed import contract: ready');

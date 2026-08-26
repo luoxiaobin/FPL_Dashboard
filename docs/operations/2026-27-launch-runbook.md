@@ -8,6 +8,8 @@ Production is `https://fpl-dashboard-seven-pi.vercel.app`. Treat the release sho
 
 GitHub Actions runs lint, unit tests, and the optimized production build on every push. The production smoke workflow runs hourly and verifies:
 
+The health request uses three bounded attempts with increasing backoff. If every attempt fails, the workflow records the final HTTP status and a truncated response body for diagnosis.
+
 - configuration, Supabase, and the official FPL bootstrap endpoint;
 - the Planning page and authenticated-import contract;
 - authentication protection on scenario and import lifecycle APIs;
