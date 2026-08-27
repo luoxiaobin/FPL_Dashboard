@@ -133,13 +133,25 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
       unlimited: importedSquad.transfers.status === 'unlimited',
     } : undefined,
   );
+  const playerSummaries = Object.fromEntries(projections.map(player => [player.id, {
+    id: player.id,
+    name: player.name,
+    position: player.position,
+    teamId: player.teamId,
+    price: player.price,
+    expectedTotal: player.expectedTotal,
+    floor: player.floor,
+    ceiling: player.ceiling,
+    uncertainty: player.uncertainty,
+  }]));
+  const freshUntil = new Date(capturedAt.getTime() + 5 * 60_000).toISOString();
 
   return {
     gameweek: planningEvent.id,
     deadline: planningEvent.deadline_time,
     horizonGameweeks: gameweeks,
     capturedAt: capturedAt.toISOString(),
-    freshUntil: new Date(capturedAt.getTime() + 5 * 60_000).toISOString(),
+    freshUntil,
     sourceVersion: `${planningEvent.id}:${capturedAt.toISOString().slice(0, 16)}`,
     squadSource,
     squadGameweek,
@@ -149,16 +161,19 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
       unlimited: importedSquad!.transfers.status === 'unlimited',
     } : { freeTransfers: 1, unlimited: false },
     scenarios,
-    players: Object.fromEntries(projections.map(player => [player.id, {
-      id: player.id,
-      name: player.name,
-      position: player.position,
-      teamId: player.teamId,
-      price: player.price,
-      expectedTotal: player.expectedTotal,
-      floor: player.floor,
-      ceiling: player.ceiling,
-      uncertainty: player.uncertainty,
-    }])),
+    players: playerSummaries,
+    _reproducibility: {
+      capturedAt: capturedAt.toISOString(),
+      freshUntil,
+      deadline: planningEvent.deadline_time,
+      gameweek: planningEvent.id,
+      horizonGameweeks: gameweeks.length,
+      bootstrap,
+      fixtures,
+      entryPayload: { entryId, squadSource, squadGameweek },
+      picksPayload: picks,
+      transfersPayload: importedSquad?.transfers ?? null,
+      players: playerSummaries,
+    },
   };
 }

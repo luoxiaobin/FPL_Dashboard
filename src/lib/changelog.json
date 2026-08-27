@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.13",
+    "date": "2026-08-26",
+    "title": "Reproducible Planning and My Plan Evaluation",
+    "changes": [
+      "Persists immutable, content-hashed FPL and entry snapshots with versioned scenarios, constraints, projections, and decisions.",
+      "Replaces device-only My Plan state with authenticated server persistence and scenario ownership validation.",
+      "Freezes selected decisions at the deadline and evaluates finalized plans against official points, captaincy, and squad outcomes."
+    ]
+  },
+  {
     "version": "0.6.12",
     "date": "2026-08-26",
     "title": "Post-Gameweek Planning Lifecycle",

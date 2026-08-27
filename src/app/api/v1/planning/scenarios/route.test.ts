@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import type { FplSquadImport } from '@/lib/fplSquadImport';
 
-const { buildPlanningWorkspaceMock, loadConfirmedSquadImportMock } = vi.hoisted(() => ({
+const { buildPlanningWorkspaceMock, loadConfirmedSquadImportMock, persistPlanningRunMock } = vi.hoisted(() => ({
   buildPlanningWorkspaceMock: vi.fn(),
   loadConfirmedSquadImportMock: vi.fn(),
+  persistPlanningRunMock: vi.fn(),
 }));
 
 vi.mock('@/lib/session', () => ({
@@ -18,6 +19,9 @@ vi.mock('@/server/planning/workspace', () => ({
 }));
 vi.mock('@/server/planning/importStore', () => ({
   loadConfirmedSquadImport: loadConfirmedSquadImportMock,
+}));
+vi.mock('@/server/planning/reproducibilityStore', () => ({
+  persistPlanningRun: persistPlanningRunMock,
 }));
 
 import { POST } from './route';
@@ -51,6 +55,7 @@ describe('planning scenarios route', () => {
   beforeEach(() => {
     buildPlanningWorkspaceMock.mockReset();
     loadConfirmedSquadImportMock.mockReset();
+    persistPlanningRunMock.mockReset();
   });
 
   it('loads the server-confirmed squad when the browser sends only constraints', async () => {
@@ -59,7 +64,12 @@ describe('planning scenarios route', () => {
       confirmedAt: '2026-08-18T12:01:00.000Z',
       expiresAt: '2026-08-21T19:30:00.000Z',
     });
-    buildPlanningWorkspaceMock.mockResolvedValue({ squadSource: 'authenticated-import', scenarios: [] });
+    buildPlanningWorkspaceMock.mockResolvedValue({
+      squadSource: 'authenticated-import',
+      scenarios: [{ strategy: 'balanced' }],
+      _reproducibility: { gameweek: 1 },
+    });
+    persistPlanningRunMock.mockResolvedValue(new Map([['balanced', '22222222-2222-4222-8222-222222222222']]));
 
     const response = await POST(new NextRequest('http://localhost/api/v1/planning/scenarios', {
       method: 'POST',
@@ -74,5 +84,15 @@ describe('planning scenarios route', () => {
       expect.objectContaining({ maxPointsHit: 4 }),
       importedSquad,
     );
+    expect(persistPlanningRunMock).toHaveBeenCalledWith(
+      3376378,
+      { gameweek: 1 },
+      expect.objectContaining({ maxPointsHit: 4 }),
+      [{ strategy: 'balanced' }],
+    );
+    expect(await response.json()).toMatchObject({
+      reproducibility: 'persisted',
+      scenarios: [{ scenarioId: '22222222-2222-4222-8222-222222222222' }],
+    });
   });
 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchFplJson } from '@/server/fpl/client';
 import { getReleaseIdentity } from '@/lib/release';
 import { checkConfirmedSquadImportStore } from '@/server/planning/importStore';
+import { checkPlanningReproducibilityStore } from '@/server/planning/reproducibilityStore';
 
 interface BootstrapHealth {
   events?: unknown[];
@@ -22,7 +23,10 @@ export async function GET() {
       retries: 0,
       timeoutMs: 5_000,
     }).catch(() => null),
-    configurationReady ? checkConfirmedSquadImportStore().catch(() => false) : Promise.resolve(false),
+    configurationReady ? Promise.all([
+      checkConfirmedSquadImportStore(),
+      checkPlanningReproducibilityStore(),
+    ]).then(checks => checks.every(Boolean)).catch(() => false) : Promise.resolve(false),
   ]);
   const upstreamReady = Boolean(bootstrap && Array.isArray(bootstrap.events) && Array.isArray(bootstrap.elements));
   const ready = configurationReady && databaseReady && upstreamReady;

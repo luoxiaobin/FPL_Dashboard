@@ -139,16 +139,14 @@ For the complete design, see:
 
 ## What comes next
 
-The next milestone is post-GW1 learning and reproducibility:
+The post-GW1 reproducibility foundation is live: Planning persists immutable season-aware source snapshots and generated scenarios, while **My Plan** is server-backed, deadline-frozen, and evaluated against finalized FPL outcomes. The next milestones are:
 
-1. Persist immutable season-aware source snapshots and generated scenarios.
-2. Preserve and label the last valid snapshot during upstream degradation.
-3. Persist **My Plan**, freeze it at the deadline, and evaluate decisions against outcomes.
-4. Calibrate projections by position and forecast horizon using observed results.
-5. Add chip opportunity modelling.
-6. Complete redesigned Squad, Players, Fixtures, and History workspaces.
-7. Add product telemetry and active failure notification.
-8. Expand regression coverage with captured, sanitized real-world FPL payloads.
+1. Preserve and label the last valid snapshot during upstream degradation.
+2. Accumulate evaluation evidence, then calibrate projections by position and forecast horizon.
+3. Add chip opportunity modelling.
+4. Complete redesigned Squad, Players, Fixtures, and History workspaces.
+5. Add product telemetry and active failure notification.
+6. Expand regression coverage with captured, sanitized real-world FPL payloads.
 
 Automatic or unattended actions on the official FPL account are not on the approved roadmap. The near-term handoff remains explicit recommendations that the manager reviews and applies in FPL.
 
@@ -226,4 +224,4 @@ A healthy response requires configuration, Supabase, and the official FPL upstre
 
 ## Status
 
-The 2026–27 Planning redesign and authenticated pre-deadline squad connection are live in production. The product is ready for weekly use and is now entering its learning, calibration, and reproducibility phase.
+The 2026–27 Planning redesign, authenticated pre-deadline squad connection, immutable scenario snapshots, and My Plan evaluation loop are live in production. The product is ready for weekly use and is now accumulating evidence for model calibration.

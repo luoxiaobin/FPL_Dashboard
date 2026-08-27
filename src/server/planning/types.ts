@@ -31,6 +31,7 @@ export interface PlanningTransfer {
 }
 
 export interface PlanningScenario {
+  scenarioId?: string;
   strategy: ScenarioStrategy;
   label: string;
   transfers: PlanningTransfer[];
@@ -55,4 +56,3 @@ export const DEFAULT_PLANNING_CONSTRAINTS: PlanningConstraints = {
   maxPointsHit: 0,
   bankReserve: 0,
 };
-

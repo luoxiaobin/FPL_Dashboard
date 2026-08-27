@@ -111,6 +111,8 @@ Official FPL public data + manager squad source
   -> manager-selected My Plan
 ```
 
+Every generated run persists content-hashed global and entry snapshots, the model version, constraints, projections, and decisions. **My Plan** stores an append-only selection referencing that scenario. Its decisions are immutable; after the deadline the selection is marked frozen, and after FPL finalizes the Gameweek it records actual points, projection error, captain match, and squad match.
+
 The three cards represent different objectives. When all objectives select the same move, lineup, and captain, the UI reports a robust recommendation and shows its floor, expected outcome, and ceiling rather than inventing artificial alternatives.
 
 ## Availability and operations

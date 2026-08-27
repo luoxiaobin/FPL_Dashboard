@@ -71,6 +71,14 @@ async function run() {
   });
   assert(scenarios.status === 401, `Unauthenticated planning API returned ${scenarios.status}, expected 401`);
 
+  for (const method of ['GET', 'POST']) {
+    const plans = await request('/api/v1/planning/plans', {
+      method,
+      ...(method === 'POST' ? { headers: { 'content-type': 'application/json' }, body: '{}' } : {}),
+    });
+    assert(plans.status === 401, `Unauthenticated My Plan ${method} returned ${plans.status}, expected 401`);
+  }
+
   for (const method of ['GET', 'POST', 'DELETE']) {
     const importedSquad = await request('/api/v1/planning/import', {
       method,
@@ -94,7 +102,7 @@ async function run() {
   console.log('  health: configuration, database, and FPL ready');
   console.log('  planning page: enabled');
   console.log('  confirmed import contract: ready');
-  console.log('  protected APIs: reject unauthenticated requests');
+  console.log('  protected scenario, My Plan, and import APIs: reject unauthenticated requests');
   console.log('  security headers: present');
 
   await writeResult({

@@ -10,6 +10,7 @@ import {
 import { parseFplSquadImport, FplSquadImportValidationError } from '@/lib/fplSquadImport';
 import { PlanningSquadValidationError } from '@/server/planning/importedSquad';
 import { loadConfirmedSquadImport } from '@/server/planning/importStore';
+import { persistPlanningRun } from '@/server/planning/reproducibilityStore';
 
 const numericIds = (value: unknown): number[] => Array.isArray(value)
   ? [...new Set(value.filter(item => Number.isInteger(item) && Number(item) > 0).map(Number))].slice(0, 50)
@@ -51,8 +52,27 @@ export async function POST(request: NextRequest) {
       }
     }
     const importedSquad = requestImport ?? storedImport?.payload;
-    const workspace = await buildPlanningWorkspace(Number(entryId), constraints, importedSquad);
-    return NextResponse.json(workspace);
+    const built = await buildPlanningWorkspace(Number(entryId), constraints, importedSquad);
+    const { _reproducibility, ...workspace } = built;
+    try {
+      const scenarioIds = await persistPlanningRun(
+        Number(entryId),
+        _reproducibility,
+        constraints,
+        workspace.scenarios,
+      );
+      return NextResponse.json({
+        ...workspace,
+        scenarios: workspace.scenarios.map(scenario => ({
+          ...scenario,
+          scenarioId: scenarioIds.get(scenario.strategy),
+        })),
+        reproducibility: 'persisted',
+      });
+    } catch (error) {
+      console.error('Planning reproducibility store unavailable:', error);
+      return NextResponse.json({ ...workspace, reproducibility: 'degraded' });
+    }
   } catch (error) {
     console.error('Planning workspace error:', error);
     if (error instanceof FplSquadImportValidationError) {

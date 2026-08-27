@@ -30,6 +30,14 @@ interface WorkspacePayload {
   transferState: { freeTransfers: number | null; unlimited: boolean };
   scenarios: PlanningScenario[];
   players: Record<string, PlayerSummary>;
+  reproducibility: 'persisted' | 'degraded';
+}
+
+interface MyPlanSummary {
+  strategy: string;
+  selectedAt: string;
+  frozenAt: string | null;
+  outcome: { projectedPoints?: number; actualPoints?: number; projectionError?: number } | null;
 }
 
 const parseIds = (value: string) => value
@@ -48,6 +56,7 @@ export default function PlanningWorkspace() {
   const [maxHit, setMaxHit] = useState(0);
   const [bankReserve, setBankReserve] = useState(0);
   const [savedPlan, setSavedPlan] = useState<string | null>(null);
+  const [myPlan, setMyPlan] = useState<MyPlanSummary | null>(null);
   const [usingConfirmedSquad, setUsingConfirmedSquad] = useState(false);
 
   const load = async () => {
@@ -72,6 +81,16 @@ export default function PlanningWorkspace() {
       if (!response.ok) throw new Error(payload.error || 'Unable to generate scenarios');
       setData(payload);
       setUsingConfirmedSquad(payload.squadSource === 'authenticated-import');
+      setSavedPlan(null);
+      setMyPlan(null);
+      if (payload.reproducibility === 'persisted') {
+        const planResponse = await fetch(`/api/v1/planning/plans?gameweek=${payload.gameweek}`);
+        if (planResponse.ok) {
+          const planPayload = await planResponse.json();
+          setSavedPlan(planPayload.plan?.strategy ?? null);
+          setMyPlan(planPayload.plan ?? null);
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to generate scenarios');
     } finally {
@@ -98,15 +117,22 @@ export default function PlanningWorkspace() {
     floor: 'floor', balanced: 'expected', upside: 'ceiling',
   }[strategy]);
   const playerName = (id: number) => data?.players[String(id)]?.name ?? `#${id}`;
-  const savePlan = () => {
-    if (!data || !selectedScenario) return;
-    localStorage.setItem(`fpl-plan-gw-${data.gameweek}`, JSON.stringify({
-      selectedAt: new Date().toISOString(),
-      capturedAt: data.capturedAt,
-      deadline: data.deadline,
-      scenario: selectedScenario,
-    }));
-    setSavedPlan(selectedScenario.strategy);
+  const savePlan = async () => {
+    if (!data || !selectedScenario?.scenarioId) return;
+    setError(null);
+    try {
+      const response = await fetch('/api/v1/planning/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioId: selectedScenario.scenarioId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Unable to save My Plan');
+      setSavedPlan(selectedScenario.strategy);
+      setMyPlan(payload.plan);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to save My Plan');
+    }
   };
   const clearSquad = async () => {
     setLoading(true);
@@ -174,7 +200,7 @@ export default function PlanningWorkspace() {
         </section>
 
         {selectedScenario && <section className={styles.detail}>
-          <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={savePlan}>{savedPlan === selectedScenario.strategy ? 'Saved as My Plan' : 'Mark as My Plan'}</button></div>
+          <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={() => void savePlan()} disabled={!selectedScenario.scenarioId}>{savedPlan === selectedScenario.strategy ? 'Saved as My Plan' : selectedScenario.scenarioId ? 'Mark as My Plan' : 'Plan storage unavailable'}</button></div>
           <p className={styles.tradeoff}>{selectedScenario.tradeoff}</p>
           <div className={styles.metrics}>
             <div><span>Five-GW {projectionLabel(selectedScenario.strategy)}</span><strong>{selectedScenario.projectedFiveGameweekPoints.toFixed(1)}</strong></div>
@@ -187,6 +213,11 @@ export default function PlanningWorkspace() {
           <h3>Bench order</h3>
           <ol className={styles.bench}>{selectedScenario.bench.map(id => <li key={id}>{playerName(id)}</li>)}</ol>
           <p className={styles.freshness}>Snapshot updated {new Date(data.capturedAt).toLocaleString()} · Model {selectedScenario.modelVersion}</p>
+          {myPlan && <p className={styles.freshness}>{myPlan.outcome
+            ? `My Plan evaluated: ${myPlan.outcome.actualPoints ?? 0} actual vs ${myPlan.outcome.projectedPoints ?? 0} projected (${(myPlan.outcome.projectionError ?? 0) >= 0 ? '+' : ''}${(myPlan.outcome.projectionError ?? 0).toFixed(1)}).`
+            : myPlan.frozenAt
+              ? `My Plan frozen at the deadline; awaiting finalized FPL results.`
+              : `My Plan saved ${new Date(myPlan.selectedAt).toLocaleString()} and will freeze at the deadline.`}</p>}
         </section>}
       </>}
     </main>

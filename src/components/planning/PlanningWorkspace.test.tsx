@@ -5,6 +5,7 @@ import PlanningWorkspace from './PlanningWorkspace';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const scenario = (strategy: 'floor' | 'balanced' | 'upside', captainId: number) => ({
+  scenarioId: `${strategy === 'floor' ? '11111111' : strategy === 'balanced' ? '22222222' : '33333333'}-2222-4222-8222-222222222222`,
   strategy,
   label: strategy[0].toUpperCase() + strategy.slice(1),
   transfers: [], transferHit: 0, squad: Array.from({ length: 15 }, (_, index) => index + 1),
@@ -20,8 +21,10 @@ const payload = {
   capturedAt: '2026-08-17T12:00:00Z',
   freshUntil: '2026-08-17T12:05:00Z',
   squadSource: 'public-gameweek',
+  squadGameweek: 1,
   sourceCapturedAt: '2026-08-17T12:00:00Z',
   transferState: { freeTransfers: 1, unlimited: false },
+  reproducibility: 'persisted',
   scenarios: [scenario('floor', 1), scenario('balanced', 2), scenario('upside', 3)],
   players: Object.fromEntries(Array.from({ length: 15 }, (_, index) => {
     const id = index + 1;
@@ -62,13 +65,21 @@ describe('PlanningWorkspace', () => {
   });
 
   it('stores an explicit My Plan snapshot', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 200, json: async () => payload } as Response);
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      if (String(input) === '/api/v1/planning/plans' && init?.method === 'POST') {
+        return { ok: true, status: 200, json: async () => ({ plan: { strategy: 'balanced', selectedAt: '2026-08-27T12:00:00Z', frozenAt: null, outcome: null } }) } as Response;
+      }
+      if (String(input).startsWith('/api/v1/planning/plans?')) {
+        return { ok: true, status: 200, json: async () => ({ plan: null }) } as Response;
+      }
+      return { ok: true, status: 200, json: async () => payload } as Response;
+    });
     render(<PlanningWorkspace />);
     const save = await screen.findByRole('button', { name: 'Mark as My Plan' });
     fireEvent.click(save);
-    const stored = JSON.parse(window.localStorage.getItem('fpl-plan-gw-1') ?? '{}');
-    expect(stored.scenario.strategy).toBe('balanced');
-    expect(screen.getByRole('button', { name: 'Saved as My Plan' })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved as My Plan' })).toBeTruthy());
+    const saveRequest = fetchMock.mock.calls.find(([input, init]) => String(input) === '/api/v1/planning/plans' && init?.method === 'POST');
+    expect(JSON.parse(String(saveRequest?.[1]?.body)).scenarioId).toBe(payload.scenarios[1].scenarioId);
   });
 
   it('uses the server-confirmed squad without resending it from browser storage', async () => {
