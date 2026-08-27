@@ -3,6 +3,12 @@
 .eyebrow { margin: 0; color: #62d98b; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .card h1 { margin: 8px 0 12px; font-size: clamp(2rem, 6vw, 3.6rem); letter-spacing: -.045em; }
 .intro, .steps, .privacy, .success p { color: #a8b9ae; line-height: 1.6; }
+.autoSync { margin: 24px 0; padding: 20px; border: 1px solid #2d6844; border-radius: 14px; background: #0c2115; }
+.autoSync h2 { margin: 6px 0 8px; color: #edf7f0; }
+.autoSync > p:not(.eyebrow), .pairingStatus { color: #a8b9ae; line-height: 1.55; }
+.pairingStatus { margin: 0; padding: 12px; border-radius: 9px; background: #07110d; font-size: .82rem; }
+.fallback { margin: 20px 0; padding: 16px; border: 1px solid #1c3529; border-radius: 12px; }
+.fallback > summary { cursor: pointer; color: #d9efe0; font-weight: 750; }
 .steps { display: grid; gap: 10px; padding-left: 22px; }
 .primary { min-height: 48px; margin: 18px 0; padding: 12px 18px; border: 0; border-radius: 10px; color: #041008; background: #62d98b; font-weight: 800; cursor: pointer; }
 .primary:disabled { cursor: wait; opacity: .6; }

@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.17",
+    "date": "2026-08-27",
+    "title": "Automatic Pre-Deadline Squad Sync",
+    "changes": [
+      "Adds a one-time installable userscript that syncs the authenticated FPL Pick Team squad on load, focus, visibility changes, and a bounded timer.",
+      "Uses revocable entry-scoped pairing tokens, stores only SHA-256 token hashes, and accepts squad contracts only from the official FPL browser origin.",
+      "Shows the last confirmed squad sync time in Planning while retaining the bookmarklet as a manual fallback."
+    ]
+  },
+  {
     "version": "0.6.16",
     "date": "2026-08-27",
     "title": "Unified Transfer Decision Support",

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { buildFplSquadBookmarklet } from '@/lib/fplSquadBookmarklet';
+import { buildFplAutoSyncUserscript } from '@/lib/fplAutoSyncUserscript';
 import { decodeFplSquadImport, type FplSquadImport } from '@/lib/fplSquadImport';
 import {
   parseFplPlayerCatalog,
@@ -21,6 +22,8 @@ export default function FplSquadImportPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [pairing, setPairing] = useState<'idle' | 'creating' | 'downloaded'>('idle');
+  const [pairingExpiresAt, setPairingExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     const hydrateFromLocation = () => {
@@ -66,6 +69,28 @@ export default function FplSquadImportPage() {
       setError('Copy was blocked. Expand the manual code and copy it directly.');
     }
   };
+  const downloadAutoSync = async () => {
+    if (!origin) return;
+    setPairing('creating');
+    setError(null);
+    try {
+      const response = await fetch('/api/v1/planning/sync-token', { method: 'POST' });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error ?? 'Unable to create auto-sync pairing');
+      const script = buildFplAutoSyncUserscript(origin, body.token);
+      const url = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'fpl-dashboard-auto-sync.user.js';
+      link.click();
+      URL.revokeObjectURL(url);
+      setPairingExpiresAt(body.expiresAt);
+      setPairing('downloaded');
+    } catch (cause) {
+      setPairing('idle');
+      setError(cause instanceof Error ? cause.message : 'Unable to create auto-sync pairing');
+    }
+  };
   const confirmSquad = async () => {
     if (!result) return;
     setSaving(true);
@@ -92,7 +117,7 @@ export default function FplSquadImportPage() {
       <section className={styles.card}>
         <p className={styles.eyebrow}>Current squad connection</p>
         <h1>Connect your current FPL squad</h1>
-        <p className={styles.intro}>Install this private Safari bookmark once, then run it from FPL’s signed-in Pick Team page whenever you want a fresh pre-deadline squad.</p>
+        <p className={styles.intro}>Install auto-sync once to keep Planning aligned whenever you use FPL’s signed-in Pick Team page. Your bookmark remains available as a manual fallback.</p>
 
         {result ? <div className={styles.success} role="status">
           <h2>Complete squad transport passed</h2>
@@ -104,14 +129,32 @@ export default function FplSquadImportPage() {
           </dl>
           <p>The fragment was cleared immediately. Review the players below before anything is saved.</p>
         </div> : <>
-          <ol className={styles.steps}>
+          <section className={styles.autoSync} aria-labelledby="auto-sync-title">
+            <p className={styles.eyebrow}>Recommended</p>
+            <h2 id="auto-sync-title">Automatic squad sync</h2>
+            <p>Requires a Safari userscript manager such as the Userscripts extension. The generated script is private and paired only with this FPL entry.</p>
+            <ol className={styles.steps}>
+              <li>Install and enable your Safari userscript manager once.</li>
+              <li>Download and install the private script below.</li>
+              <li>Open FPL’s signed-in <strong>Pick Team</strong> page. It syncs on load, focus, and roster changes detected during the session.</li>
+            </ol>
+            <button className={styles.primary} type="button" onClick={() => void downloadAutoSync()} disabled={!origin || pairing === 'creating'}>
+              {pairing === 'creating' ? 'Creating private pairing…' : pairing === 'downloaded' ? 'Download a replacement auto-sync script' : 'Download auto-sync userscript'}
+            </button>
+            {pairing === 'downloaded' && <p className={styles.pairingStatus} role="status">Private script downloaded. Install it in your userscript manager{pairingExpiresAt ? `; pairing expires ${new Date(pairingExpiresAt).toLocaleDateString()}` : ''}. Creating another script revokes the previous one.</p>}
+          </section>
+
+          <details className={styles.fallback}>
+            <summary>Manual bookmark fallback</summary>
+            <ol className={styles.steps}>
             <li>Click <strong>Copy complete bookmark code</strong>.</li>
             <li>In Safari, create a bookmark named <strong>Send squad to FPL Dashboard</strong>.</li>
             <li>Open <strong>Bookmarks → Edit Bookmarks</strong>, choose <strong>Edit Address</strong>, and paste the code.</li>
             <li>Visit your signed-in FPL <strong>Pick Team</strong> page and click the bookmark.</li>
-          </ol>
-          <button className={styles.primary} type="button" onClick={() => void copyBookmarklet()} disabled={!bookmarklet}>{copied ? 'Complete bookmark code copied' : 'Copy complete bookmark code'}</button>
-          <details><summary>Show manual bookmark code</summary><textarea aria-label="Complete bookmark code" readOnly value={bookmarklet} rows={8} /></details>
+            </ol>
+            <button className={styles.primary} type="button" onClick={() => void copyBookmarklet()} disabled={!bookmarklet}>{copied ? 'Complete bookmark code copied' : 'Copy complete bookmark code'}</button>
+            <details><summary>Show manual bookmark code</summary><textarea aria-label="Complete bookmark code" readOnly value={bookmarklet} rows={8} /></details>
+          </details>
         </>}
 
         {result && !review && !error && <div className={styles.loading} role="status">Resolving player names from the public FPL catalogue…</div>}
@@ -126,7 +169,7 @@ export default function FplSquadImportPage() {
         </section>}
 
         {error && <p className={styles.error} role="alert">{error}</p>}
-        <p className={styles.privacy}>The bookmark sends only the validated squad contract. It never reads or copies your FPL password, cookies, or session token.</p>
+        <p className={styles.privacy}>Auto-sync and the bookmark send only the validated squad contract. They never read or copy your FPL password, cookies, or session token. The auto-sync pairing is revocable and only its SHA-256 hash is stored.</p>
         <Link className={styles.back} href="/planning">← Return to Planning</Link>
       </section>
     </main>
