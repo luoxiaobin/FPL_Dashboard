@@ -1,122 +1,119 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import type { PlanningScenario } from '@/server/planning/types';
 import styles from './TransferOptimizer.module.css';
 
-interface Suggestion {
-  out_id: number;
-  in_id: number;
-  expected_gain: number;
-  out_name: string;
-  in_name: string;
-  rationale: string;
-  out_team_code?: number | null;
-  in_team_code?: number | null;
-  out_club?: string | null;
-  in_club?: string | null;
+interface PlayerSummary {
+  id: number;
+  name: string;
 }
 
+interface PlanningRecommendation {
+  gameweek: number;
+  capturedAt: string;
+  squadSource: 'authenticated-import' | 'public-gameweek';
+  squadGameweek: number | null;
+  scenarios: PlanningScenario[];
+  players: Record<string, PlayerSummary>;
+}
+
+const formatNumber = (value: unknown, digits = 1) => Number.isFinite(Number(value))
+  ? Number(value).toFixed(digits)
+  : '—';
+
 export default function TransferOptimizer() {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [data, setData] = useState<PlanningRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/squad/optimize', { method: 'POST' })
-      .then(res => {
-        if (!res.ok) throw new Error('Optimizer route returned an error');
-        return res.json();
+    fetch('/api/v1/planning/scenarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ constraints: {
+        lockedPlayerIds: [],
+        excludedPlayerIds: [],
+        maxPointsHit: 0,
+        bankReserve: 0,
+      } }),
+    })
+      .then(async response => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Recommendation unavailable');
+        setData(payload);
       })
-      .then(data => {
-        if (data.suggestions) {
-          setSuggestions(data.suggestions);
-        } else if (data.error) {
-          setError(data.error);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError('Failed to load transfer optimizations.');
-        setLoading(false);
-      });
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Recommendation unavailable'))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className={styles.loading}>Running transfer simulations...</div>;
-  if (error) return null; // Silently fail or handle gracefully if preferred, but usually we just don't show the widget on dashboard if unauthorized/err
+  const scenario = useMemo(() => data?.scenarios.find(item => item.strategy === 'balanced')
+    ?? data?.scenarios[0], [data]);
+  const playerName = (id: number) => data?.players[String(id)]?.name ?? `Player #${id}`;
 
   return (
-    <div className={styles.container}>
+    <section className={styles.container} aria-labelledby="transfer-recommendation-title">
       <div className={styles.header}>
-        <h2 className={styles.title}>Transfer Optimizer</h2>
-        <p className={styles.subtitle}>AI-driven recommendations based on expected points and fixtures</p>
+        <div>
+          <h2 id="transfer-recommendation-title" className={styles.title}>This Week&apos;s Move</h2>
+          <p className={styles.subtitle}>Five-Gameweek decision support from the same model used in Planning</p>
+        </div>
+        <Link className={styles.planningLink} href="/planning">Compare scenarios</Link>
       </div>
 
-      {suggestions.length === 0 ? (
-        <div className={styles.emptyState}>No recommended transfers found. Your squad is looking optimal!</div>
-      ) : (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Recommend Out</th>
-                <th>Recommend In</th>
-                <th>Expected Advantage</th>
-              </tr>
-            </thead>
-            <tbody>
-              {suggestions.map((s, idx) => (
-                <tr key={idx} className={styles.row}>
-                  <td>
-                    <div className={styles.playerBlock}>
-                      {s.out_team_code && (
-                        <img
-                          data-badge
-                          src={`https://resources.premierleague.com/premierleague/badges/50/t${s.out_team_code}.png`}
-                          alt={s.out_club ?? ''}
-                          className={styles.clubBadge}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      )}
-                      <div className={styles.playerText}>
-                        <span className={styles.playerName}>
-                          <span className={styles.arrowOut}>↑</span> {s.out_name}
-                        </span>
-                        {s.out_club && <span className={styles.clubName}>{s.out_club}</span>}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.playerBlock}>
-                      {s.in_team_code && (
-                        <img
-                          data-badge
-                          src={`https://resources.premierleague.com/premierleague/badges/50/t${s.in_team_code}.png`}
-                          alt={s.in_club ?? ''}
-                          className={styles.clubBadge}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      )}
-                      <div className={styles.playerText}>
-                        <span className={styles.playerName}>
-                          <span className={styles.arrowIn}>↓</span> {s.in_name}
-                        </span>
-                        {s.in_club && <span className={styles.clubName}>{s.in_club}</span>}
-                        <div className={styles.rationale}>{s.rationale}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.gainBlock}>
-                      <span className={styles.gainIcon}>⚡</span> +{s.expected_gain} pts
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading && <div className={styles.loading}>Building your transfer recommendation…</div>}
+
+      {!loading && error && (
+        <div className={styles.status} role="alert">
+          <strong>Recommendation unavailable</strong>
+          <span>{error}</span>
+          <Link href="/planning">Open Planning to retry</Link>
         </div>
       )}
-    </div>
+
+      {!loading && !error && data && scenario && (
+        <>
+          <div className={styles.summary}>
+            <div>
+              <span className={styles.kicker}>GW{data.gameweek} balanced recommendation</span>
+              <strong className={styles.decision}>{scenario.transfers.length > 0 ? 'Make the move' : 'Roll the transfer'}</strong>
+              <p className={styles.tradeoff}>{scenario.tradeoff}</p>
+            </div>
+            <div className={styles.metrics}>
+              <div><span>Five-GW expected</span><strong>{formatNumber(scenario.projectedFiveGameweekPoints)} pts</strong></div>
+              <div><span>GW{data.gameweek} expected</span><strong>{formatNumber(scenario.projectedGameweekPoints)} pts</strong></div>
+              <div><span>Bank after move</span><strong>£{formatNumber(scenario.bankRemaining)}m</strong></div>
+              <div><span>Points hit</span><strong>{scenario.transferHit === 0 ? 'None' : `-${scenario.transferHit}`}</strong></div>
+            </div>
+          </div>
+
+          {scenario.transfers.length > 0 ? (
+            <div className={styles.moves}>
+              {scenario.transfers.map(transfer => (
+                <article className={styles.move} key={`${transfer.outPlayerId}-${transfer.inPlayerId}`}>
+                  <div><span className={styles.label}>Sell</span><strong>{playerName(transfer.outPlayerId)}</strong></div>
+                  <span className={styles.arrow} aria-hidden="true">→</span>
+                  <div><span className={styles.label}>Buy</span><strong>{playerName(transfer.inPlayerId)}</strong></div>
+                  <div className={styles.gain}><span>Five-GW gain</span><strong>+{formatNumber(transfer.expectedGain)} pts</strong></div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.status}>
+              <strong>Hold is the recommendation—not an empty result</strong>
+              <span>The model found no legal no-hit transfer that improves this five-Gameweek plan under the current projections and budget.</span>
+            </div>
+          )}
+
+          <p className={styles.freshness}>
+            {data.squadSource === 'authenticated-import'
+              ? 'Using your confirmed pre-deadline squad'
+              : `Using your published GW${data.squadGameweek ?? data.gameweek} squad`}
+            {' · '}Updated {new Date(data.capturedAt).toLocaleString()}{' · '}Model {scenario.modelVersion}
+          </p>
+        </>
+      )}
+    </section>
   );
 }

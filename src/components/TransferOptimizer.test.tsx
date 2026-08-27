@@ -1,68 +1,88 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import type { PlanningScenario } from '@/server/planning/types';
 import TransferOptimizer from './TransferOptimizer';
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
-const mockSuggestions = [
-  {
-    out_id: 1,
-    in_id: 2,
-    expected_gain: 4.2,
-    out_name: 'Dubravka',
-    in_name: 'Verbruggen',
-    rationale: 'Verbruggen provides higher expected points.',
-    out_team_code: 23,
-    in_team_code: 3,
-    out_club: 'NEW',
-    in_club: 'ARS',
+const scenario = (transfers: PlanningScenario['transfers']): PlanningScenario => ({
+  strategy: 'balanced',
+  label: 'Balanced',
+  transfers,
+  transferHit: 0,
+  squad: [],
+  startingEleven: [],
+  bench: [],
+  captainId: 3,
+  viceCaptainId: 4,
+  chip: null,
+  bankRemaining: 0.9,
+  projectedGameweekPoints: 30.6,
+  projectedFiveGameweekPoints: 312.2,
+  uncertainty: 0.11,
+  tradeoff: 'Maximizes the base five-Gameweek projection under current assumptions.',
+  modelVersion: 'fpl-internal-v2',
+});
+
+const payload = (transfers: PlanningScenario['transfers']) => ({
+  gameweek: 2,
+  capturedAt: '2026-08-27T04:00:00.000Z',
+  squadSource: 'public-gameweek',
+  squadGameweek: 1,
+  scenarios: [scenario(transfers)],
+  players: {
+    '1': { id: 1, name: 'Muñoz' },
+    '2': { id: 2, name: 'De Cuyper' },
   },
-];
+});
 
-type MockSuggestion = Omit<(typeof mockSuggestions)[number], 'out_team_code' | 'in_team_code' | 'out_club' | 'in_club'> & {
-  out_team_code?: number;
-  in_team_code?: number;
-  out_club?: string;
-  in_club?: string;
-};
-
-function mockFetch(suggestions: MockSuggestion[] = mockSuggestions) {
+function mockResponse(body: unknown, ok = true) {
   vi.spyOn(global, 'fetch').mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve({ suggestions }),
+    ok,
+    json: () => Promise.resolve(body),
   } as Response);
 }
 
-describe('TransferOptimizer — club badge + name', () => {
-  it('renders the out player club short name', async () => {
-    mockFetch();
+describe('TransferOptimizer planning recommendation', () => {
+  it('uses the shared Planning scenarios endpoint', async () => {
+    mockResponse(payload([{ outPlayerId: 1, inPlayerId: 2, cost: 0.4, expectedGain: 8.3 }]));
     render(<TransferOptimizer />);
-    await waitFor(() => expect(screen.getByText('NEW')).toBeTruthy());
+
+    await waitFor(() => expect(screen.getByText('Make the move')).toBeTruthy());
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/planning/scenarios', expect.objectContaining({
+      method: 'POST',
+    }));
   });
 
-  it('renders the in player club short name', async () => {
-    mockFetch();
+  it('shows the recommended transfer and supporting metrics', async () => {
+    mockResponse(payload([{ outPlayerId: 1, inPlayerId: 2, cost: 0.4, expectedGain: 8.3 }]));
     render(<TransferOptimizer />);
-    await waitFor(() => expect(screen.getByText('ARS')).toBeTruthy());
+
+    await waitFor(() => expect(screen.getByText('Muñoz')).toBeTruthy());
+    expect(screen.getByText('De Cuyper')).toBeTruthy();
+    expect(screen.getByText('+8.3 pts')).toBeTruthy();
+    expect(screen.getByText('312.2 pts')).toBeTruthy();
+    expect(screen.getByText('Using your published GW1 squad', { exact: false })).toBeTruthy();
   });
 
-  it('renders club badge images with correct src', async () => {
-    mockFetch();
+  it('explains a hold recommendation instead of claiming the squad is optimal', async () => {
+    mockResponse(payload([]));
     render(<TransferOptimizer />);
-    await waitFor(() => {
-      const imgs = document.querySelectorAll('img[data-badge]');
-      expect(imgs.length).toBe(2); // one for out, one for in
-    });
+
+    await waitFor(() => expect(screen.getByText('Roll the transfer')).toBeTruthy());
+    expect(screen.getByText('Hold is the recommendation—not an empty result')).toBeTruthy();
+    expect(screen.queryByText(/squad is looking optimal/i)).toBeNull();
   });
 
-  it('still renders when team codes are absent (graceful fallback)', async () => {
-    const noClubSuggestions = [{
-      out_id: 1, in_id: 2, expected_gain: 4.2,
-      out_name: 'Dubravka', in_name: 'Verbruggen',
-      rationale: 'Reason.',
-    }];
-    mockFetch(noClubSuggestions);
+  it('shows a recoverable error instead of silently hiding the widget', async () => {
+    mockResponse({ error: 'Unable to generate planning scenarios right now.' }, false);
     render(<TransferOptimizer />);
-    await waitFor(() => expect(screen.getByText('Dubravka')).toBeTruthy());
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText('Unable to generate planning scenarios right now.')).toBeTruthy();
+    expect(screen.getByText('Open Planning to retry')).toBeTruthy();
   });
 });

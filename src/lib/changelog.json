@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.16",
+    "date": "2026-08-27",
+    "title": "Unified Transfer Decision Support",
+    "changes": [
+      "Replaces the dashboard's separate one-Gameweek optimizer with the balanced five-Gameweek Planning scenario.",
+      "Shows the recommended sell and buy, expected gain, bank, points hit, squad source, freshness, and model version.",
+      "Explains a genuine hold decision and surfaces recoverable errors instead of claiming an empty result means the squad is optimal."
+    ]
+  },
+  {
     "version": "0.6.15",
     "date": "2026-08-27",
     "title": "Planning Bundle Cache Recovery",
