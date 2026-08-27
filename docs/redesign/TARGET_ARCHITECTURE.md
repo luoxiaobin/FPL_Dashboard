@@ -49,5 +49,5 @@ The legacy dashboard remains available while `planning_workspace_v1` is rolled o
 - Scenario generation supports constrained transfers, legal lineup selection, captaincy, and no-chip decisions. Chip opportunity modeling is deferred to the next optimizer increment.
 - My Plan is device-local until verified application identity and server persistence are introduced.
 - Production access remains disabled unless `PLANNING_WORKSPACE_V1=true`.
-- Pre-deadline squad access depends on a manager-invoked bookmark because FPL offers no third-party OAuth; official public picks take over automatically after the deadline.
+- Pre-deadline squad access depends on a manager-invoked bookmark because FPL offers no third-party OAuth. Planning otherwise uses the latest published squad as the upcoming Gameweek baseline; target-Gameweek public picks take over automatically after its deadline.
 - The connector is read-only. Recommendations are not written to the official FPL account; any future guided write-back requires a separate ADR and legal/terms review.

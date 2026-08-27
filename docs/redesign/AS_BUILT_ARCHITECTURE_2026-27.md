@@ -81,20 +81,22 @@ Only a confirmed contract is saved. Supabase row-level security denies anonymous
 ```mermaid
 flowchart TD
   Start[Generate scenarios]
-  PublicPicks{Official public picks<br/>available?}
-  UsePublic[Use official public GW squad]
-  Saved{Valid confirmed import<br/>available and unexpired?}
-  UseSaved[Use confirmed pre-deadline squad]
-  Recover[Ask manager to refresh import<br/>or wait for public release]
+  Target[Select upcoming planning Gameweek]
+  Saved{Valid confirmed squad<br/>for target deadline?}
+  UseSaved[Use confirmed private squad]
+  PublicPicks{Latest published squad<br/>available?}
+  UsePublic[Use latest published squad<br/>as planning baseline]
+  Recover[Ask manager to import squad<br/>or wait for public release]
 
-  Start --> PublicPicks
-  PublicPicks -->|yes| UsePublic
-  PublicPicks -->|404 / not released| Saved
+  Start --> Target
+  Target --> Saved
   Saved -->|yes| UseSaved
-  Saved -->|no| Recover
+  Saved -->|no| PublicPicks
+  PublicPicks -->|yes| UsePublic
+  PublicPicks -->|no| Recover
 ```
 
-Official public picks become authoritative automatically once FPL releases them. The confirmed import is a pre-deadline fallback, not a competing long-term source of truth. It expires two hours after the deadline to accommodate delayed public availability without silently using old picks.
+The planning target and public squad source are separate lifecycle concepts. After GW1, for example, Planning targets GW2 while published GW1 picks provide the baseline. A fresh confirmed import supersedes that older baseline because it contains the manager's private GW2 changes. It expires two hours after the target deadline, when published GW2 picks become authoritative.
 
 ## Planning pipeline
 

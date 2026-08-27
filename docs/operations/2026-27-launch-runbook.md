@@ -40,7 +40,7 @@ Do not deploy non-critical changes inside the final 60 minutes before the deadli
 - **Saved squad is stale or wrong:** Select **Refresh squad**, rerun the bookmark, review, and confirm. The latest confirmation replaces the previous record.
 - **Import is unrecoverable:** Select **Clear saved squad**, then import again. Clearing is deliberate and cannot be undone.
 - **Supabase degraded:** A same-tab confirmed payload can still be submitted directly. After the deadline, public FPL picks remain usable without the saved-import store.
-- **Public picks released:** No action is required. Planning automatically makes the official public Gameweek squad authoritative.
+- **Public picks released:** No action is required. Planning uses those picks as the baseline for the next Gameweek, unless a newer confirmed import represents private changes.
 
 ## Rollback
 

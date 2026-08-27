@@ -25,6 +25,7 @@ interface WorkspacePayload {
   capturedAt: string;
   freshUntil: string;
   squadSource: 'authenticated-import' | 'public-gameweek';
+  squadGameweek: number | null;
   sourceCapturedAt: string;
   transferState: { freeTransfers: number | null; unlimited: boolean };
   scenarios: PlanningScenario[];
@@ -136,7 +137,7 @@ export default function PlanningWorkspace() {
       </header>
 
       <section className={styles.importCard} aria-labelledby="current-squad-title">
-        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">{usingConfirmedSquad ? 'Confirmed squad connected' : 'Use your current FPL picks'}</h2><p>{usingConfirmedSquad ? `Planning is using your reviewed, saved squad.${data?.transferState?.unlimited ? ' Unlimited changes are modeled with no points hit.' : ''}` : 'Install the private Safari bookmark to bring your latest Pick Team squad into Planning before the public API opens.'}</p></div>
+        <div><p className={styles.eyebrow}>Pre-deadline squad access</p><h2 id="current-squad-title">{usingConfirmedSquad ? 'Confirmed squad connected' : 'Using latest public squad'}</h2><p>{usingConfirmedSquad ? `Planning is using your reviewed squad for GW${data?.gameweek}.${data?.transferState?.unlimited ? ' Unlimited changes are modeled with no points hit.' : ''}` : `Planning is using your published GW${data?.squadGameweek ?? data?.gameweek} squad as the baseline for GW${data?.gameweek}. Import again after making private FPL changes.`}</p></div>
         <div className={styles.importActions}><Link href="/planning/import">{usingConfirmedSquad ? 'Refresh squad' : 'Set up squad import'}</Link>{usingConfirmedSquad && <button type="button" onClick={() => void clearSquad()}>Clear saved squad</button>}</div>
       </section>
 

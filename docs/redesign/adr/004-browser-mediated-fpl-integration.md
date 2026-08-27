@@ -15,7 +15,7 @@ Adopt a user-invoked bookmarklet as a browser-mediated, read-only connector. It 
 
 Credentials and authentication material never cross the FPL origin. The dashboard does not impersonate the manager, automate login, or retain FPL session access.
 
-Official public picks supersede the confirmed import automatically after release. The bookmarklet is therefore a time-bounded bridge across a specific upstream product gap.
+The latest published picks remain the fallback baseline, while a fresh confirmed import represents private changes for the upcoming deadline. Target-Gameweek public picks supersede it after release. The bookmarklet is therefore a time-bounded bridge across a specific upstream product gap.
 
 ## Consequences
 

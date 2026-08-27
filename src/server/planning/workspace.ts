@@ -5,11 +5,13 @@ import { generatePlanningScenarios } from '@/server/scenarios/generator';
 import type { PlanningConstraints, Position } from '@/server/planning/types';
 import type { FplSquadImport } from '@/lib/fplSquadImport';
 import { validateImportedSquadForPlanning } from '@/server/planning/importedSquad';
+import { selectPlanningGameweek, selectPublishedSquadGameweek } from '@/server/planning/gameweekLifecycle';
 
 interface BootstrapEvent {
   id: number;
   is_current: boolean;
   is_next: boolean;
+  is_previous?: boolean;
   finished: boolean;
   deadline_time: string;
 }
@@ -55,21 +57,14 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     fetchFplJson<BootstrapPayload>('/api/bootstrap-static/', { cacheSeconds: 300 }),
     fetchFplJson<FixturePayload[]>('/api/fixtures/', { cacheSeconds: 300 }),
   ]);
-  const activeEvent = bootstrap.events.find(event => event.is_current)
-    ?? bootstrap.events.find(event => event.is_next)
-    ?? bootstrap.events[0];
-  if (!activeEvent) throw new Error('FPL has no available Gameweek');
+  const planningEvent = selectPlanningGameweek(bootstrap.events);
+  const publishedSquadEvent = selectPublishedSquadGameweek(bootstrap.events, planningEvent);
 
   let picks: PicksPayload;
-  let squadSource: 'authenticated-import' | 'public-gameweek' = 'public-gameweek';
-  try {
-    picks = await fetchFplJson<PicksPayload>(
-      `/api/entry/${entryId}/event/${activeEvent.id}/picks/`,
-      { timeoutMs: 8_000 },
-    );
-  } catch (error) {
-    if (!(error instanceof FplUpstreamError) || error.status !== 404 || !importedSquad) throw error;
-    const validUntil = new Date(Date.parse(activeEvent.deadline_time) + 2 * 60 * 60_000);
+  let squadSource: 'authenticated-import' | 'public-gameweek';
+  let squadGameweek: number | null;
+  if (importedSquad) {
+    const validUntil = new Date(Date.parse(planningEvent.deadline_time) + 2 * 60 * 60_000);
     validateImportedSquadForPlanning(importedSquad, entryId, bootstrap.elements.map(player => ({
       id: player.id,
       teamId: player.team,
@@ -80,13 +75,24 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
       entry_history: { bank: importedSquad.transfers.bank },
     };
     squadSource = 'authenticated-import';
+    squadGameweek = null;
+  } else {
+    if (!publishedSquadEvent) {
+      throw new FplUpstreamError('Current squad picks are not public yet', 404, `/api/entry/${entryId}/event/${planningEvent.id}/picks/`);
+    }
+    picks = await fetchFplJson<PicksPayload>(
+      `/api/entry/${entryId}/event/${publishedSquadEvent.id}/picks/`,
+      { timeoutMs: 8_000 },
+    );
+    squadSource = 'public-gameweek';
+    squadGameweek = publishedSquadEvent.id;
   }
   if (!Array.isArray(picks.picks) || picks.picks.length !== 15) {
     throw new Error('The FPL squad is not available for planning yet');
   }
 
   const gameweeks = bootstrap.events
-    .filter(event => event.id >= activeEvent.id)
+    .filter(event => event.id >= planningEvent.id)
     .slice(0, 5)
     .map(event => event.id);
   const fixturesByTeam = new Map<number, Array<{ gameweek: number; difficulty: number }>>();
@@ -129,13 +135,14 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
   );
 
   return {
-    gameweek: activeEvent.id,
-    deadline: activeEvent.deadline_time,
+    gameweek: planningEvent.id,
+    deadline: planningEvent.deadline_time,
     horizonGameweeks: gameweeks,
     capturedAt: capturedAt.toISOString(),
     freshUntil: new Date(capturedAt.getTime() + 5 * 60_000).toISOString(),
-    sourceVersion: `${activeEvent.id}:${capturedAt.toISOString().slice(0, 16)}`,
+    sourceVersion: `${planningEvent.id}:${capturedAt.toISOString().slice(0, 16)}`,
     squadSource,
+    squadGameweek,
     sourceCapturedAt: squadSource === 'authenticated-import' ? importedSquad!.capturedAt : capturedAt.toISOString(),
     transferState: squadSource === 'authenticated-import' ? {
       freeTransfers: importedSquad!.transfers.freeTransfers,

@@ -96,9 +96,87 @@ describe('planning workspace confirmed-squad bridge', () => {
     expect(workspace.scenarios.every(scenario => scenario.squad.length === 15)).toBe(true);
     expect(workspace.scenarios.every(scenario => scenario.transferHit === 0)).toBe(true);
     expect(workspace.players['1'].expectedTotal).toBeGreaterThan(0);
+    expect(fetchFplJsonMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/picks/'),
+      expect.anything(),
+    );
+  });
+
+  it('targets GW2 while using published GW1 picks as the baseline', async () => {
+    const gw2Deadline = new Date(Date.now() + 3_600_000).toISOString();
+    fetchFplJsonMock.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap-static/') return {
+        events: [
+          {
+            id: 1,
+            is_current: true,
+            is_next: false,
+            finished: true,
+            deadline_time: '2026-08-21T17:30:00Z',
+          },
+          {
+            id: 2,
+            is_current: false,
+            is_next: true,
+            finished: false,
+            deadline_time: gw2Deadline,
+          },
+        ],
+        elements: players,
+      };
+      if (path === '/api/fixtures/') return Array.from({ length: 8 }, (_, index) => ({
+        event: 2,
+        team_h: index * 2 + 1,
+        team_a: index * 2 + 2,
+        team_h_difficulty: 3,
+        team_a_difficulty: 3,
+      }));
+      if (path === '/api/entry/3376378/event/1/picks/') return {
+        picks: lineupOrder.map(id => ({ element: id, selling_price: 50 })),
+        entry_history: { bank: 10 },
+      };
+      throw new Error(`Unexpected FPL path: ${path}`);
+    });
+
+    const workspace = await buildPlanningWorkspace(3376378, DEFAULT_PLANNING_CONSTRAINTS);
+
+    expect(workspace.gameweek).toBe(2);
+    expect(workspace.deadline).toBe(gw2Deadline);
+    expect(workspace.horizonGameweeks).toEqual([2]);
+    expect(workspace.squadSource).toBe('public-gameweek');
+    expect(workspace.squadGameweek).toBe(1);
     expect(fetchFplJsonMock).toHaveBeenCalledWith(
       '/api/entry/3376378/event/1/picks/',
       { timeoutMs: 8_000 },
+    );
+  });
+
+  it('prefers a fresh confirmed GW2 squad over published GW1 picks', async () => {
+    const gw2Deadline = new Date(Date.now() + 3_600_000).toISOString();
+    fetchFplJsonMock.mockImplementation(async (path: string) => {
+      if (path === '/api/bootstrap-static/') return {
+        events: [
+          { id: 1, is_current: true, is_next: false, finished: true, deadline_time: '2026-08-21T17:30:00Z' },
+          { id: 2, is_current: false, is_next: true, finished: false, deadline_time: gw2Deadline },
+        ],
+        elements: players,
+      };
+      if (path === '/api/fixtures/') return [];
+      throw new Error(`Unexpected FPL path: ${path}`);
+    });
+
+    const workspace = await buildPlanningWorkspace(
+      3376378,
+      DEFAULT_PLANNING_CONSTRAINTS,
+      importedSquad,
+    );
+
+    expect(workspace.gameweek).toBe(2);
+    expect(workspace.squadSource).toBe('authenticated-import');
+    expect(workspace.squadGameweek).toBeNull();
+    expect(fetchFplJsonMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/picks/'),
+      expect.anything(),
     );
   });
 });

@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.12",
+    "date": "2026-08-26",
+    "title": "Post-Gameweek Planning Lifecycle",
+    "changes": [
+      "Targets the upcoming manageable Gameweek while keeping the latest published squad as the planning baseline.",
+      "Uses a fresh confirmed import for private pre-deadline squad changes instead of silently reverting to the previous Gameweek's public picks.",
+      "Shows the source and target Gameweeks clearly in Planning and covers preseason, post-GW1, and final-Gameweek boundaries."
+    ]
+  },
+  {
     "version": "0.6.11",
     "date": "2026-08-26",
     "title": "Intermittent Outage Detection",

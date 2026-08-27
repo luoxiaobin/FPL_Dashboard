@@ -9,9 +9,10 @@ import {
   saveConfirmedSquadImport,
 } from '@/server/planning/importStore';
 import type { Position } from '@/server/planning/types';
+import { selectPlanningGameweek } from '@/server/planning/gameweekLifecycle';
 
 interface BootstrapPayload {
-  events: Array<{ is_current: boolean; is_next: boolean; deadline_time: string }>;
+  events: Array<{ id: number; is_current: boolean; is_next: boolean; finished: boolean; deadline_time: string }>;
   elements: Array<{ id: number; team: number; element_type: number }>;
 }
 
@@ -48,10 +49,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const imported = parseFplSquadImport(body?.importedSquad);
     const bootstrap = await fetchFplJson<BootstrapPayload>('/api/bootstrap-static/', { cacheSeconds: 300 });
-    const event = bootstrap.events.find(candidate => candidate.is_current)
-      ?? bootstrap.events.find(candidate => candidate.is_next)
-      ?? bootstrap.events[0];
-    if (!event) throw new PlanningSquadValidationError('FPL has no available Gameweek');
+    const event = selectPlanningGameweek(bootstrap.events);
     const expiresAt = new Date(Date.parse(event.deadline_time) + 2 * 60 * 60_000);
     validateImportedSquadForPlanning(imported, entryId, bootstrap.elements.map(player => ({
       id: player.id,

@@ -53,7 +53,7 @@ Before a deadline, FPL's public entry endpoints do not expose the manager's edit
 
 This gives the optimizer the manager's true pre-deadline squad, selling prices, bank, transfer state, captaincy, bench order, and active-chip state. Passwords, cookies, bearer tokens, and reusable FPL session material never cross into the dashboard.
 
-The confirmed squad can be refreshed, replaced, or cleared. It expires shortly after the deadline, and official public Gameweek picks become authoritative automatically once FPL publishes them.
+The confirmed squad can be refreshed, replaced, or cleared. Before the upcoming deadline it represents private Pick Team changes; without one, Planning uses the latest published Gameweek squad as its baseline. It expires shortly after its target deadline, when that Gameweek's official picks become authoritative.
 
 The integration is intentionally read-only: the dashboard recommends and models FPL changes but does not submit transfers, activate chips, or update the official squad.
 
@@ -119,14 +119,14 @@ flowchart LR
   Review --> Store
 
   Public --> Gateway
-  Store -->|Fallback until public picks release| Gateway
+  Store -->|Private squad for upcoming deadline| Gateway
   Gateway --> Projections
   Projections --> Scenarios
   Scenarios --> ThisWeek
   ThisWeek --> Manager
 ```
 
-Official public picks take precedence once available. The confirmed import exists to make the otherwise inaccessible pre-deadline planning window useful.
+Planning separates the upcoming target Gameweek from the latest Gameweek whose picks are public. A fresh confirmed import represents private changes for the target; otherwise, the latest published squad is the baseline. Once target-Gameweek picks are released, they become authoritative.
 
 For the complete design, see:
 
