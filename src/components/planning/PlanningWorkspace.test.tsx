@@ -96,4 +96,25 @@ describe('PlanningWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clear saved squad' }));
     expect(await screen.findByText(/Saved squad cleared/)).toBeTruthy();
   });
+
+  it('renders a safe placeholder instead of crashing on an invalid numeric metric', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      if (String(input).startsWith('/api/v1/planning/plans?')) {
+        return { ok: true, status: 200, json: async () => ({ plan: null }) } as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ...payload,
+          scenarios: payload.scenarios.map((item, index) => index === 0
+            ? { ...item, bankRemaining: null }
+            : item),
+        }),
+      } as Response;
+    });
+    render(<PlanningWorkspace />);
+    fireEvent.click(await screen.findByRole('button', { name: /Floor/i }));
+    expect(screen.getByText('£—m')).toBeTruthy();
+  });
 });

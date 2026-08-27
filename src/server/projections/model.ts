@@ -1,6 +1,6 @@
 import type { PlayerProjection, Position } from '@/server/planning/types';
 
-export const PROJECTION_MODEL_VERSION = 'fpl-internal-v1';
+export const PROJECTION_MODEL_VERSION = 'fpl-internal-v2';
 
 export interface ProjectionPlayerInput {
   id: number;
@@ -68,4 +68,3 @@ export function projectPlayer(
     startProbability: probability,
   };
 }
-

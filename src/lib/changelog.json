@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.6.14",
+    "date": "2026-08-27",
+    "title": "Post-Deadline Planning Data Compatibility",
+    "changes": [
+      "Handles official public picks that omit pre-deadline selling prices by falling back to each player's current FPL price.",
+      "Versions corrected projections separately so previously invalid persisted scenarios cannot be reused.",
+      "Guards numeric Planning displays so malformed upstream metrics show a placeholder instead of crashing the workspace."
+    ]
+  },
+  {
     "version": "0.6.13",
     "date": "2026-08-26",
     "title": "Reproducible Planning and My Plan Evaluation",

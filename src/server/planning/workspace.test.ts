@@ -132,7 +132,7 @@ describe('planning workspace confirmed-squad bridge', () => {
         team_a_difficulty: 3,
       }));
       if (path === '/api/entry/3376378/event/1/picks/') return {
-        picks: lineupOrder.map(id => ({ element: id, selling_price: 50 })),
+        picks: lineupOrder.map(id => ({ element: id })),
         entry_history: { bank: 10 },
       };
       throw new Error(`Unexpected FPL path: ${path}`);
@@ -145,6 +145,8 @@ describe('planning workspace confirmed-squad bridge', () => {
     expect(workspace.horizonGameweeks).toEqual([2]);
     expect(workspace.squadSource).toBe('public-gameweek');
     expect(workspace.squadGameweek).toBe(1);
+    expect(workspace.scenarios.every(scenario => Number.isFinite(scenario.bankRemaining))).toBe(true);
+    expect(workspace.scenarios.every(scenario => Number.isFinite(scenario.projectedGameweekPoints))).toBe(true);
     expect(fetchFplJsonMock).toHaveBeenCalledWith(
       '/api/entry/3376378/event/1/picks/',
       { timeoutMs: 8_000 },

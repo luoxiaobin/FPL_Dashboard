@@ -42,7 +42,7 @@ interface FixturePayload {
 }
 
 interface PicksPayload {
-  picks: Array<{ element: number; selling_price: number }>;
+  picks: Array<{ element: number; selling_price?: number }>;
   entry_history?: { bank?: number };
 }
 
@@ -106,7 +106,10 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     fixturesByTeam.set(fixture.team_a, away);
   }
 
-  const sellingPrices = new Map(picks.picks.map(pick => [pick.element, pick.selling_price / 10]));
+  const sellingPrices = new Map(picks.picks.flatMap(pick => {
+    const sellingPrice = Number(pick.selling_price);
+    return Number.isFinite(sellingPrice) ? [[pick.element, sellingPrice / 10] as const] : [];
+  }));
   const squadIds = new Set(picks.picks.map(pick => pick.element));
   const projections = bootstrap.elements.map(player => projectPlayer({
     id: player.id,

@@ -44,6 +44,11 @@ const parseIds = (value: string) => value
   .split(',')
   .map(item => Number.parseInt(item.trim(), 10))
   .filter(item => Number.isInteger(item) && item > 0);
+const formatNumber = (value: unknown, digits = 1) => (
+  value !== null && value !== undefined && Number.isFinite(Number(value))
+    ? Number(value).toFixed(digits)
+    : '—'
+);
 
 export default function PlanningWorkspace() {
   const router = useRouter();
@@ -188,9 +193,9 @@ export default function PlanningWorkspace() {
               : 'Hold transfer';
             return <button key={scenario.strategy} className={`${styles.scenario} ${selected === scenario.strategy ? styles.selected : ''}`} onClick={() => setSelected(scenario.strategy)}>
               <span className={styles.scenarioLabel}>{scenario.label}</span>
-              <strong>{scenario.projectedFiveGameweekPoints.toFixed(1)} pts</strong>
+              <strong>{formatNumber(scenario.projectedFiveGameweekPoints)} pts</strong>
               <span>Five-GW {projectionLabel(scenario.strategy)}</span>
-              <span>GW{data.gameweek}: {scenario.projectedGameweekPoints.toFixed(1)}</span>
+              <span>GW{data.gameweek}: {formatNumber(scenario.projectedGameweekPoints)}</span>
               <span>Captain: {playerName(scenario.captainId)}</span>
               <span>{transferSummary}</span>
               <span>{scenario.transferHit > 0 ? `-${scenario.transferHit} point hit` : 'No points hit'}</span>
@@ -203,18 +208,18 @@ export default function PlanningWorkspace() {
           <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={() => void savePlan()} disabled={!selectedScenario.scenarioId}>{savedPlan === selectedScenario.strategy ? 'Saved as My Plan' : selectedScenario.scenarioId ? 'Mark as My Plan' : 'Plan storage unavailable'}</button></div>
           <p className={styles.tradeoff}>{selectedScenario.tradeoff}</p>
           <div className={styles.metrics}>
-            <div><span>Five-GW {projectionLabel(selectedScenario.strategy)}</span><strong>{selectedScenario.projectedFiveGameweekPoints.toFixed(1)}</strong></div>
-            <div><span>Bank remaining</span><strong>£{selectedScenario.bankRemaining.toFixed(1)}m</strong></div>
+            <div><span>Five-GW {projectionLabel(selectedScenario.strategy)}</span><strong>{formatNumber(selectedScenario.projectedFiveGameweekPoints)}</strong></div>
+            <div><span>Bank remaining</span><strong>£{formatNumber(selectedScenario.bankRemaining)}m</strong></div>
             <div><span>Captain</span><strong>{playerName(selectedScenario.captainId)}</strong></div>
             <div><span>Vice captain</span><strong>{playerName(selectedScenario.viceCaptainId)}</strong></div>
           </div>
           <h3>Starting XI</h3>
-          <ol className={styles.playerList}>{selectedScenario.startingEleven.map(id => <li key={id}><span>{playerName(id)}</span><span>{data.players[String(id)]?.expectedTotal.toFixed(1)} pts</span></li>)}</ol>
+          <ol className={styles.playerList}>{selectedScenario.startingEleven.map(id => <li key={id}><span>{playerName(id)}</span><span>{formatNumber(data.players[String(id)]?.expectedTotal)} pts</span></li>)}</ol>
           <h3>Bench order</h3>
           <ol className={styles.bench}>{selectedScenario.bench.map(id => <li key={id}>{playerName(id)}</li>)}</ol>
           <p className={styles.freshness}>Snapshot updated {new Date(data.capturedAt).toLocaleString()} · Model {selectedScenario.modelVersion}</p>
           {myPlan && <p className={styles.freshness}>{myPlan.outcome
-            ? `My Plan evaluated: ${myPlan.outcome.actualPoints ?? 0} actual vs ${myPlan.outcome.projectedPoints ?? 0} projected (${(myPlan.outcome.projectionError ?? 0) >= 0 ? '+' : ''}${(myPlan.outcome.projectionError ?? 0).toFixed(1)}).`
+              ? `My Plan evaluated: ${formatNumber(myPlan.outcome.actualPoints, 0)} actual vs ${formatNumber(myPlan.outcome.projectedPoints)} projected (${Number(myPlan.outcome.projectionError ?? 0) >= 0 ? '+' : ''}${formatNumber(myPlan.outcome.projectionError)}).`
             : myPlan.frozenAt
               ? `My Plan frozen at the deadline; awaiting finalized FPL results.`
               : `My Plan saved ${new Date(myPlan.selectedAt).toLocaleString()} and will freeze at the deadline.`}</p>}
