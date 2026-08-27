@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.6.18",
+    "date": "2026-08-27",
+    "title": "FPL Upstream Connectivity Recovery",
+    "changes": [
+      "Removes the bot-style custom user agent that FPL began rejecting from the Vercel request path and restores the shared browser-compatible header.",
+      "Adds sanitized server logging for future FPL health-check failures without exposing credentials or payload data."
+    ]
+  },
+  {
     "version": "0.6.17",
     "date": "2026-08-27",
     "title": "Automatic Pre-Deadline Squad Sync",

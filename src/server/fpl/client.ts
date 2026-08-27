@@ -46,7 +46,6 @@ export async function fetchFplJson<T>(
       const response = await fplFetch(safePath, {
         headers: {
           Accept: 'application/json',
-          'User-Agent': 'FPL-Dashboard/0.5 (+https://fpl-dashboard-seven-pi.vercel.app)',
         },
         signal: controller.signal,
         ...(options.cacheSeconds

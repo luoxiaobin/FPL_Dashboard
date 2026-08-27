@@ -17,17 +17,22 @@ export async function GET() {
     && process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 
-  const [bootstrap, databaseReady] = await Promise.all([
+  const [bootstrapResult, databaseReady] = await Promise.all([
     fetchFplJson<BootstrapHealth>('/api/bootstrap-static/', {
       cacheSeconds: 300,
       retries: 0,
       timeoutMs: 5_000,
-    }).catch(() => null),
+    }).then(data => ({ data, error: null })).catch(error => ({ data: null, error })),
     configurationReady ? Promise.all([
       checkConfirmedSquadImportStore(),
       checkPlanningReproducibilityStore(),
     ]).then(checks => checks.every(Boolean)).catch(() => false) : Promise.resolve(false),
   ]);
+  if (bootstrapResult.error) {
+    const reason = bootstrapResult.error instanceof Error ? bootstrapResult.error.message : 'Unknown FPL failure';
+    console.error('Production health FPL check failed:', reason);
+  }
+  const bootstrap = bootstrapResult.data;
   const upstreamReady = Boolean(bootstrap && Array.isArray(bootstrap.events) && Array.isArray(bootstrap.elements));
   const ready = configurationReady && databaseReady && upstreamReady;
 
