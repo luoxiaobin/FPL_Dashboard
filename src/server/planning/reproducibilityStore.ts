@@ -45,13 +45,22 @@ export function seasonIdentity(deadline: string) {
 }
 
 export async function checkPlanningReproducibilityStore(): Promise<boolean> {
-  const checks = await Promise.all([
+  const checks = await inspectPlanningReproducibilityStore();
+  return Object.values(checks).every(check => check.ready);
+}
+
+export async function inspectPlanningReproducibilityStore() {
+  const results = await Promise.all([
     supabaseAdmin.from('fpl_snapshots').select('id', { head: true }).limit(1),
     supabaseAdmin.from('entry_snapshots').select('id, source_version', { head: true }).limit(1),
     supabaseAdmin.from('planning_scenarios').select('id', { head: true }).limit(1),
     supabaseAdmin.from('plan_selections').select('id', { head: true }).limit(1),
   ]);
-  return checks.every(check => !check.error);
+  const names = ['fplSnapshots', 'entrySnapshots', 'planningScenarios', 'planSelections'] as const;
+  return Object.fromEntries(results.map((result, index) => [
+    names[index],
+    { ready: !result.error, error: result.error?.message ?? null },
+  ])) as Record<(typeof names)[number], { ready: boolean; error: string | null }>;
 }
 
 async function requireRow<T>(operation: PromiseLike<{ data: T | null; error: { message: string } | null }>, label: string) {

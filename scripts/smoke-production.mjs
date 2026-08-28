@@ -38,7 +38,13 @@ async function run() {
   );
   assert(healthBody.status === 'ready', `Health status is ${healthBody.status}`);
   assert(healthBody.checks?.configuration === 'pass', 'Configuration check did not pass');
-  assert(healthBody.checks?.database === 'pass', 'Database check did not pass');
+  const failedDatabaseChecks = Object.entries(healthBody.details?.database ?? {})
+    .filter(([, status]) => status !== 'pass')
+    .map(([name]) => name);
+  assert(
+    healthBody.checks?.database === 'pass',
+    `Database check did not pass${failedDatabaseChecks.length > 0 ? `: ${failedDatabaseChecks.join(', ')}` : ''}`,
+  );
   assert(healthBody.checks?.fpl === 'pass', 'FPL upstream check did not pass');
   assert(/^\d+\.\d+\.\d+$/.test(healthBody.release?.version ?? ''), 'Release version is missing');
   assert(healthBody.release?.shortCommitSha, 'Release commit is missing');

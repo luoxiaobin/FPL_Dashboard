@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fetchFplJson } from '@/server/fpl/client';
 import { getReleaseIdentity } from '@/lib/release';
-import { checkConfirmedSquadImportStore } from '@/server/planning/importStore';
-import { checkPlanningReproducibilityStore } from '@/server/planning/reproducibilityStore';
+import { inspectConfirmedSquadImportStore } from '@/server/planning/importStore';
+import { inspectPlanningReproducibilityStore } from '@/server/planning/reproducibilityStore';
 
 interface BootstrapHealth {
   events?: unknown[];
@@ -17,16 +17,20 @@ export async function GET() {
     && process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 
-  const [bootstrapResult, databaseReady] = await Promise.all([
+  const [bootstrapResult, databaseResult] = await Promise.all([
     fetchFplJson<BootstrapHealth>('/api/bootstrap-static/', {
       cacheSeconds: 300,
       retries: 0,
       timeoutMs: 5_000,
     }).then(data => ({ data, error: null })).catch(error => ({ data: null, error })),
     configurationReady ? Promise.all([
-      checkConfirmedSquadImportStore(),
-      checkPlanningReproducibilityStore(),
-    ]).then(checks => checks.every(Boolean)).catch(() => false) : Promise.resolve(false),
+      inspectConfirmedSquadImportStore(),
+      inspectPlanningReproducibilityStore(),
+    ]).then(([confirmedSquadImports, planning]) => ({ confirmedSquadImports, ...planning }))
+      .catch(error => ({ databaseProbe: {
+        ready: false,
+        error: error instanceof Error ? error.message : 'Unknown database failure',
+      } })) : Promise.resolve({ configuration: { ready: false, error: 'Database is not configured' } }),
   ]);
   if (bootstrapResult.error) {
     const reason = bootstrapResult.error instanceof Error ? bootstrapResult.error.message : 'Unknown FPL failure';
@@ -34,6 +38,15 @@ export async function GET() {
   }
   const bootstrap = bootstrapResult.data;
   const upstreamReady = Boolean(bootstrap && Array.isArray(bootstrap.events) && Array.isArray(bootstrap.elements));
+  const databaseChecks = Object.fromEntries(Object.entries(databaseResult).map(([name, result]) => [
+    name,
+    result.ready ? 'pass' : 'fail',
+  ]));
+  const failedDatabaseChecks = Object.entries(databaseResult).filter(([, result]) => !result.ready);
+  for (const [name, result] of failedDatabaseChecks) {
+    console.error(`Production health database check failed (${name}):`, result.error ?? 'Unknown database failure');
+  }
+  const databaseReady = configurationReady && failedDatabaseChecks.length === 0;
   const ready = configurationReady && databaseReady && upstreamReady;
 
   return NextResponse.json({
@@ -42,6 +55,9 @@ export async function GET() {
       configuration: configurationReady ? 'pass' : 'fail',
       database: databaseReady ? 'pass' : 'fail',
       fpl: upstreamReady ? 'pass' : 'fail',
+    },
+    details: {
+      database: databaseChecks,
     },
     release,
     timestamp: new Date().toISOString(),

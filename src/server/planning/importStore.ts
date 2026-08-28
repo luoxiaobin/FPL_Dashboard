@@ -8,12 +8,21 @@ export interface StoredSquadImport {
   expiresAt: string;
 }
 
-export async function checkConfirmedSquadImportStore(): Promise<boolean> {
+export interface StoreHealthCheck {
+  ready: boolean;
+  error: string | null;
+}
+
+export async function inspectConfirmedSquadImportStore(): Promise<StoreHealthCheck> {
   const { error } = await supabaseAdmin
     .from('confirmed_squad_imports')
     .select('id', { head: true })
     .limit(1);
-  return !error;
+  return { ready: !error, error: error?.message ?? null };
+}
+
+export async function checkConfirmedSquadImportStore(): Promise<boolean> {
+  return (await inspectConfirmedSquadImportStore()).ready;
 }
 
 export async function saveConfirmedSquadImport(payload: FplSquadImport, expiresAt: Date): Promise<StoredSquadImport> {
