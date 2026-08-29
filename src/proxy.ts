@@ -6,16 +6,16 @@ import rateLimit from './lib/rateLimit';
  * Next.js 16 Proxy (formerly Middleware)
  * Handles rate limiting for API routes.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Only apply rate limiting to /api/v1/ routes
   if (request.nextUrl.pathname.startsWith('/api/v1/')) {
     // request.ip was removed in Next.js 15. Standard headers are used instead.
-    const ip = 
-      request.headers.get('x-real-ip') || 
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+    const ip =
+      request.headers.get('x-real-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       '127.0.0.1';
-      
-    const isAllowed = rateLimit(ip);
+
+    const isAllowed = await rateLimit(ip);
     
     if (!isAllowed) {
       console.warn(`[RATE LIMIT EXCEEDED] Blocked IP: ${ip} on path: ${request.nextUrl.pathname}`);
