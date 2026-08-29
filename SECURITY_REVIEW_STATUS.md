@@ -20,7 +20,7 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 | C3 | Critical | Missing RLS policies on `recommendation_logs` / `user_preferences` | ✅ Fixed |
 | H1 | High | Cookie lacks `SameSite` / session-token binding | ✅ Fixed |
 | H2 | High | SSRF via unvalidated upstream fetches | ✅ Fixed |
-| H3 | High | Rate limiting is in-memory only, trivially bypassed | ❌ Open |
+| H3 | High | Rate limiting is in-memory only, trivially bypassed | ✅ Fixed |
 | H4 | High | Error responses leak internal messages | ✅ Fixed |
 | M1 | Medium | Bootstrap cache is mutable module-level state (race condition) | ❌ Open |
 | M2 | Medium | No sanitization on `teamName` before DB upsert | ✅ Fixed |
@@ -29,7 +29,7 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 | L1 | Low | User-Agent header spoofing | ❌ Open (operational risk, not code vuln) |
 | L2 | Low | No security headers configured | ✅ Fixed |
 
-**9 fully fixed, 4 open** (1 of the open items — H3 — is High severity; the rest are Medium/Low).
+**10 fully fixed, 3 open** (all remaining open items are Medium/Low — no High severity items remain open).
 
 ---
 
@@ -51,12 +51,11 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 
 **L2** — `next.config.ts`: added `headers()` export with `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection`.
 
+**H3** — Full fix applied (2026-08-29), commit `7fe8566`. `src/lib/rateLimit.ts` rewritten around `@upstash/ratelimit`'s `Ratelimit.slidingWindow(30, '60 s')`, backed by Upstash Redis accessed over HTTP/REST (Edge-runtime compatible — unlike `ioredis`, which needs a raw TCP connection Vercel Edge doesn't support). Fails open (logs loudly, allows the request) if `KV_REST_API_URL`/`KV_REST_API_TOKEN` are missing or an Upstash call errors at runtime, so a Redis outage degrades to "no rate limiting" rather than a full outage. `src/proxy.ts`'s `proxy()` handler is now `async` to await the check. Infra: Upstash Redis provisioned via the Vercel Marketplace integration (`upstash-kv-teal-canvas`, Free plan), explicitly scoped to Production **and** Development (Preview was already covered by default; Development had to be added manually after the initial marketplace connection defaulted to Production+Preview only — worth checking this scope explicitly if the integration is ever recreated). **Note:** the Upstash REST credentials were briefly pasted in plaintext during setup troubleshooting and were rotated immediately after via Upstash's dashboard; current credentials were never exposed. Verified: `tsc --noEmit` clean (excl. 1 pre-existing unrelated test-file error), `eslint` 0 errors, `vitest` 165/165 passing. **Not independently verified:** a real `npm run build` / deployed smoke test — the sandbox used for this fix can't reach the network for Next.js's Google Fonts fetch, so build success is inferred from the type-check/lint/test results, not a completed build. Run `npm run build` for real before/during your next deploy to confirm.
+
 ---
 
 ## Open — needs decision or follow-up work
-
-**H3 (High) — rate limiter is in-memory, resets on serverless cold starts, trivially bypassed.**
-`src/lib/rateLimit.ts:9`. Real fix requires a persistent store — Vercel KV or Upstash Redis — not just a code edit. **Blocked on:** does this project already have Vercel KV or Upstash provisioned? If not, that's a setup decision before the code fix can happen.
 
 **M1 (Medium) — bootstrap cache race condition.**
 `src/app/api/v1/squad/live/route.ts:7-8`. Module-level mutable cache (`bootstrapCache`, `lastFetchTime`) can race across concurrent invocations on the same serverless instance. Review itself notes impact is low (stale data for a few seconds, not a breach).
@@ -95,7 +94,7 @@ Exception: for H3 specifically (Redis/KV rate limiter, must be Edge-runtime comp
 
 - The full original review write-up (complete text, all findings) is preserved in the local Claude Code session transcript: `~/.claude/projects/-Users-kevinluo/3d9f9b94-b73c-4c93-9d92-6d23e688468c.jsonl` on the Mac mini — search for `"# 🔒 Security Review"` if the raw text is ever needed again. This file is local-machine-only, not synced to the repo.
 - **Working copy location (updated 2026-08-28):** the old `/tmp/FPL_Dashboard_security_review` copy is gone, confirming the risk flagged above — it did not survive. The permanent working copy now lives at `/Users/kevinluo/Documents/FPL_Dashboard` (confirmed clean, up to date with `origin/master`, H1/H2 commit `ac4efaf` present in history). Use this path going forward; the `/tmp` path above is stale and should be ignored.
-- To resume: H1 and H2 are still fully fixed (2026-08-12, via Claude Cowork — not the local model) and confirmed intact in the current working copy. Pick H3 next (only remaining open High-severity item) — needs the Vercel KV/Upstash decision above before code changes. M1/M4/L1 can be tackled independently in any order; M3 is worth a second look now that its auth gate has changed (see note above) but isn't closed.
+- To resume: H1, H2, and H3 are all fixed now (2026-08-29, via Claude Cowork). No High-severity items remain open. M1/M4/L1 can be tackled independently in any order; M3 is worth a second look now that its auth gate has changed (see note above) but isn't closed. Before deploying H3, run a real `npm run build` — it was only verified via tsc/lint/test in the fixing session, not a completed build.
 - Works equally well handed to hosted Claude Code, local Claude Code, or continued via Cowork — this doc plus the repo's current `git log` is sufficient context; no need to re-run the original review.
 
 ### Model/harness update (2026-08-28) — local model abandoned mid-evaluation, pivoting to cloud
@@ -112,4 +111,6 @@ The `qwen3.6-35b-iq3-64k` setup above got slow again at high context fill (~91% 
 
 **Built along the way:** a Hermes skill (`~/.hermes/skills/finops/provider-spend-report/`) wrapping `hermes insights --days N` to check token usage/model mix on demand. Confirmed working against the real CLI (an earlier version assumed a `hermes usage --by-provider --json` command that doesn't exist — corrected). Known limits, documented in the skill itself: groups by model name only (can't separate "Copilot's gpt-5-mini" from another account's), and cost shows "Unknown / no pricing data" for every cloud model used so far — Hermes has no rate table for them, so **this skill cannot answer "how much have I spent," only "how many tokens on which models."** GitHub's own Billing Overview page remains the only authoritative dollar figure for Copilot.
 
-**Bottom line for whoever picks up H3 next:** no model/harness combination has been proven on a real fix since the Qwen3.6 IQ3 setup degraded. Before trusting any model with H3 (the one remaining item with real correctness nuance), first confirm tool-calling actually works end-to-end on that model/provider with a low-stakes test (M1 or M4), the same caution flagged for the local models above — that caution applies equally to `gpt-5-mini` via Copilot, since it's had exactly one smoke-test message so far.
+**Update (2026-08-29): H3 is done.** Fixed directly via Claude Cowork (not any of the local/cloud models discussed above — this pivot conversation predated actually running H3 through one). So the "no model/harness combination has been proven yet" caution below no longer blocks anything security-related; it's still relevant if you pick up M1/M3/M4/L1 with a local or Copilot-routed model, but there's no more open High-severity work waiting on it.
+
+**Original bottom line (kept for context):** no model/harness combination had been proven on a real fix since the Qwen3.6 IQ3 setup degraded. Before trusting any model with correctness-sensitive work, first confirm tool-calling actually works end-to-end on that model/provider with a low-stakes test, the same caution flagged for the local models above — that caution applies equally to `gpt-5-mini` via Copilot, since it's had exactly one smoke-test message so far.
