@@ -1,6 +1,12 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
+interface RateLimitProvider {
+  limit(identifier: string): Promise<{ success: boolean }>;
+}
+
+type ReportFailure = (message: string, error?: unknown) => void;
+
 // H3 fix: the previous implementation was a plain in-memory Map. On Vercel's
 // serverless/Edge platform that state doesn't survive cold starts and isn't
 // shared across concurrent instances, so the "30 req/min" limit was only
@@ -32,20 +38,22 @@ const ratelimit = hasRedisConfig
     })
   : null;
 
-export default async function rateLimit(ip: string): Promise<boolean> {
-  if (!ratelimit) {
-    // No Redis configured — fail open rather than block every request.
-    // The startup error above makes this loud in logs/monitoring.
-    return true;
-  }
+export function createRateLimit(provider: RateLimitProvider | null, reportFailure: ReportFailure = console.error) {
+  return async (identifier: string): Promise<boolean> => {
+    if (!provider) return true;
 
-  try {
-    const { success } = await ratelimit.limit(ip);
-    return success;
-  } catch (error) {
-    // Fail open on transient Upstash errors too: a Redis outage shouldn't
-    // 503 the whole app. Logged so the outage itself stays visible.
-    console.error('[rateLimit] Upstash request failed, failing open:', error);
-    return true;
-  }
+    try {
+      const { success } = await provider.limit(identifier);
+      return success;
+    } catch (error) {
+      // Fail open on transient Upstash errors: a Redis outage should not take
+      // down every API route. Reporting keeps the protection loss visible.
+      reportFailure('[rateLimit] Upstash request failed, failing open:', error);
+      return true;
+    }
+  };
 }
+
+const rateLimit = createRateLimit(ratelimit);
+
+export default rateLimit;

@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.6.20",
+    "date": "2026-09-05",
+    "title": "Shared Rate Limiting and Security Gates",
+    "changes": [
+      "Replaces per-instance API throttling with a shared Upstash Redis sliding window suitable for serverless deployments.",
+      "Adds deterministic coverage for accepted, rejected, unconfigured, and provider-degraded rate-limit paths.",
+      "Makes CI reject tracked environment files and keeps generated stale Next.js output out of source control."
+    ]
+  },
+  {
+    "version": "0.6.19",
+    "date": "2026-08-28",
+    "title": "Actionable Database Health Diagnostics",
+    "changes": [
+      "Breaks the aggregate database readiness check into named confirmed-import, snapshot, scenario, and plan-selection probes.",
+      "Includes failed probe names in production smoke diagnostics while preserving intermittent-health escalation."
+    ]
+  },
+  {
     "version": "0.6.18",
     "date": "2026-08-27",
     "title": "FPL Upstream Connectivity Recovery",

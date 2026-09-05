@@ -25,7 +25,7 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 | M1 | Medium | Bootstrap cache is mutable module-level state (race condition) | ❌ Open |
 | M2 | Medium | No sanitization on `teamName` before DB upsert | ✅ Fixed |
 | M3 | Medium | Service-role key used in sync SSE stream, weak auth gate | ❌ Open |
-| M4 | Medium | No CI/pre-commit enforcement of `.env*` exclusion | ❌ Open |
+| M4 | Medium | No CI/pre-commit enforcement of `.env*` exclusion | ✅ Fixed |
 | L1 | Low | User-Agent header spoofing | ❌ Open (operational risk, not code vuln) |
 | L2 | Low | No security headers configured | ✅ Fixed |
 
@@ -51,7 +51,9 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 
 **L2** — `next.config.ts`: added `headers()` export with `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection`.
 
-**H3** — Full fix applied (2026-08-29), commit `7fe8566`. `src/lib/rateLimit.ts` rewritten around `@upstash/ratelimit`'s `Ratelimit.slidingWindow(30, '60 s')`, backed by Upstash Redis accessed over HTTP/REST (Edge-runtime compatible — unlike `ioredis`, which needs a raw TCP connection Vercel Edge doesn't support). Fails open (logs loudly, allows the request) if `KV_REST_API_URL`/`KV_REST_API_TOKEN` are missing or an Upstash call errors at runtime, so a Redis outage degrades to "no rate limiting" rather than a full outage. `src/proxy.ts`'s `proxy()` handler is now `async` to await the check. Infra: Upstash Redis provisioned via the Vercel Marketplace integration (`upstash-kv-teal-canvas`, Free plan), explicitly scoped to Production **and** Development (Preview was already covered by default; Development had to be added manually after the initial marketplace connection defaulted to Production+Preview only — worth checking this scope explicitly if the integration is ever recreated). **Note:** the Upstash REST credentials were briefly pasted in plaintext during setup troubleshooting and were rotated immediately after via Upstash's dashboard; current credentials were never exposed. Verified: `tsc --noEmit` clean (excl. 1 pre-existing unrelated test-file error), `eslint` 0 errors, `vitest` 165/165 passing. **Not independently verified:** a real `npm run build` / deployed smoke test — the sandbox used for this fix can't reach the network for Next.js's Google Fonts fetch, so build success is inferred from the type-check/lint/test results, not a completed build. Run `npm run build` for real before/during your next deploy to confirm.
+**H3** — Full fix applied (2026-08-29), commit `7fe8566`. `src/lib/rateLimit.ts` was rewritten around `@upstash/ratelimit`'s `Ratelimit.slidingWindow(30, '60 s')`, backed by Upstash Redis accessed over HTTP/REST. It fails open, with error reporting, if configuration is missing or Upstash is unavailable, so Redis degradation does not take down every API route. `src/proxy.ts` is asynchronous to await the shared check. Infra: Upstash Redis is provisioned through the Vercel Marketplace integration (`upstash-kv-teal-canvas`, Free plan). The required REST variables were independently verified in Vercel for Production and Preview on 2026-09-05; local Development intentionally exercises the documented fail-open path unless credentials are supplied. The implementation now has deterministic coverage for accepted requests, rejected requests, missing configuration, and provider failure. Validation: TypeScript clean, ESLint 0 errors, and Vitest 169/169 passing; optimized build and deployed smoke verification are the remaining release gates.
+
+**M4** — Fixed in CI on 2026-09-05. Both the primary and end-to-end workflows reject tracked `.env` files and verify that `.env.local` remains ignored, turning the repository's existing `.gitignore` rule into an enforced deployment gate.
 
 ---
 
@@ -62,9 +64,6 @@ Purpose of this doc: full findings list with exact status, so this can be resume
 
 **M3 (Medium) — sync SSE endpoint uses service-role client behind a weak auth gate.**
 `src/app/api/v1/sync/route.ts`. Long-running SSE stream uses `supabaseAdmin` (bypasses RLS). The auth gate is now the H1 session-token check (`getEntryIdFromSession`) rather than a raw cookie read, which is a meaningfully stronger gate than before — but the endpoint still authorizes by "any valid session" with no additional scoping, so this is left open rather than marked fixed.
-
-**M4 (Medium) — no CI enforcement that `.env*` stays out of git.**
-Process/tooling gap: add a pre-commit hook or CI step (e.g., `git-secrets` or a simple grep check) rather than relying solely on `.gitignore`.
 
 **L1 (Low) — User-Agent spoofing on FPL API calls.**
 Framed by the review as an operational/ToS risk, not a code vulnerability. Lowest priority; a product decision more than a security fix.

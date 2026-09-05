@@ -30,6 +30,15 @@ jobs:
       run: |
         test -z "$(git ls-files playwright/.auth)"
         git check-ignore -q playwright/.auth/fpl.json
+
+    - name: Reject tracked environment files
+      run: |
+        if git ls-files | grep -Eq '(^|/)\.env($|\.)'; then
+          echo "Tracked environment files are forbidden:"
+          git ls-files | grep -E '(^|/)\.env($|\.)'
+          exit 1
+        fi
+        git check-ignore -q .env.local
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run Playwright tests
