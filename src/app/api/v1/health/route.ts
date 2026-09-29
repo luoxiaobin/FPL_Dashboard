@@ -18,10 +18,14 @@ export async function GET() {
   );
 
   const [bootstrapResult, databaseResult] = await Promise.all([
+    // The FPL API throws intermittent 503s, so the probe retries with backoff
+    // instead of failing the whole health check on a single transient blip.
+    // Worst case stays under the smoke script's 15s request timeout.
     fetchFplJson<BootstrapHealth>('/api/bootstrap-static/', {
       cacheSeconds: 300,
-      retries: 0,
-      timeoutMs: 5_000,
+      retries: 2,
+      timeoutMs: 3_000,
+      retryDelayMs: 1_000,
     }).then(data => ({ data, error: null })).catch(error => ({ data: null, error })),
     configurationReady ? Promise.all([
       inspectConfirmedSquadImportStore(),

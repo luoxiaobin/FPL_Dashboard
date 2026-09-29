@@ -18,6 +18,11 @@ interface FplRequestOptions {
   cacheSeconds?: number;
   retries?: number;
   timeoutMs?: number;
+  /**
+   * Base delay between upstream retries. The actual wait before retry
+   * `attempt` is `retryDelayMs * (attempt + 1)`. Defaults to 150ms.
+   */
+  retryDelayMs?: number;
 }
 
 function assertApiPath(path: string): string {
@@ -37,6 +42,7 @@ export async function fetchFplJson<T>(
   const safePath = assertApiPath(path);
   const retries = Math.max(0, Math.min(options.retries ?? 1, 2));
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const retryDelayMs = Math.max(0, options.retryDelayMs ?? 150);
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const controller = new AbortController();
@@ -55,7 +61,7 @@ export async function fetchFplJson<T>(
 
       if (!response.ok) {
         if (response.status >= 500 && attempt < retries) {
-          await wait(150 * (attempt + 1));
+          await wait(retryDelayMs * (attempt + 1));
           continue;
         }
         throw new FplUpstreamError(
@@ -72,7 +78,7 @@ export async function fetchFplJson<T>(
         const reason = error instanceof Error ? error.message : 'Unknown upstream failure';
         throw new FplUpstreamError(`FPL request failed: ${reason}`, 503, safePath);
       }
-      await wait(150 * (attempt + 1));
+      await wait(retryDelayMs * (attempt + 1));
     } finally {
       clearTimeout(timeout);
     }
