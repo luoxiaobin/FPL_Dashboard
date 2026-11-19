@@ -1,0 +1,35 @@
+# Generated dependency, build, coverage, and test output
+node_modules/
+.next/
+coverage/
+playwright-report/
+test-results/
+.smoke/
+graphify-out/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Generated dependency metadata
+package-lock.json
+
+# Visual assets do not contribute to the application architecture graph.
+public/branding/
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.gif
+public/**/*.webp
+public/**/*.ico
+public/**/*.svg
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/*.gif
+docs/**/*.webp
+
+# Historical execution plans are superseded by the current system, user,
+# architecture, operations, testing, and mobile design documentation.
+docs/superpowers/

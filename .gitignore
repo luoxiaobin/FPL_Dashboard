@@ -44,6 +44,12 @@ yarn-error.log*
 # Supabase CLI local linkage and cached versions
 /supabase/.temp/
 
+# Graphify machine-local incremental state. The shareable graph, report,
+# viewer, and wiki remain tracked under graphify-out/.
+/graphify-out/.graphify_*
+/graphify-out/cache/
+/graphify-out/manifest.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
