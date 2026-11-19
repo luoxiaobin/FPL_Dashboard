@@ -38,6 +38,39 @@ describe('generatePlanningScenarios', () => {
     expect(scenarios[2].projectedFiveGameweekPoints).toBeGreaterThan(scenarios[1].projectedFiveGameweekPoints);
   });
 
+  it('benches a stronger long-term player for a better Gameweek fixture and updates captaincy', () => {
+    const weeklySquad = squad.map(item => {
+      if (item.id === 6) return { ...item, expectedByGameweek: [1, 5, 5, 5, 6] };
+      if (item.id === 12) return { ...item, expectedByGameweek: [8, 1, 1, 1, 1] };
+      return item;
+    });
+    const balanced = generatePlanningScenarios(weeklySquad, [], 10, DEFAULT_PLANNING_CONSTRAINTS)[1];
+    expect(balanced.startingEleven).toContain(12);
+    expect(balanced.bench).toContain(6);
+    expect(balanced.captainId).toBe(12);
+    const weeklyTotal = (ids: number[], captainId: number, index: number) =>
+      [...ids, captainId].reduce((sum, id) => sum + weeklySquad.find(item => item.id === id)!.expectedByGameweek[index], 0);
+    expect(balanced.projectedGameweekPoints).toBeCloseTo(weeklyTotal(balanced.startingEleven, 12, 0));
+    const fixedLineupTotal = [0, 1, 2, 3, 4].reduce((sum, index) =>
+      sum + weeklyTotal(balanced.startingEleven, 12, index), 0);
+    expect(balanced.projectedFiveGameweekPoints).toBeGreaterThan(fixedLineupTotal);
+  });
+
+  it('compares both legal lineups against holding and deducts the hit once', () => {
+    const [ , balanced ] = generatePlanningScenarios(squad, [player(16, 2, 8, 28)], 10,
+      { ...DEFAULT_PLANNING_CONSTRAINTS, maxPointsHit: 4 }, { freeTransfers: 0, unlimited: false });
+    expect(balanced.transfers).toHaveLength(1);
+    expect(balanced.transferHit).toBe(4);
+    expect(balanced.versusHold).toMatchObject({ gameweekGain: -2.6, horizonGain: 3, horizonGameweeks: 5 });
+    expect(balanced.projectedFiveGameweekPoints - balanced.versusHold!.horizonPoints).toBeCloseTo(3);
+  });
+
+  it('holds when a player upgrade adds no net points to the weekly starting lineups', () => {
+    const balanced = generatePlanningScenarios(squad, [player(16, 2, 8, 11)], 10, DEFAULT_PLANNING_CONSTRAINTS)[1];
+    expect(balanced.transfers).toEqual([]);
+    expect(balanced.versusHold).toMatchObject({ gameweekGain: 0, horizonGain: 0 });
+  });
+
   it('respects locked and excluded players', () => {
     const scenarios = generatePlanningScenarios(squad, [player(16, 2, 8, 50)], 10, {
       ...DEFAULT_PLANNING_CONSTRAINTS,

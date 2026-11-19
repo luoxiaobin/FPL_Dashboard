@@ -3,6 +3,8 @@
 Status: Production baseline (`v0.6.9`)
 Date: 2026-08-18
 
+> Historical baseline: this document records the launch architecture at v0.6.9. For the current implementation, including automatic squad sync, detailed plan verification, AI-assisted explanations and team news, chip guidance, and planning replay, see [`docs/SYSTEM_DOCUMENTATION.md`](../SYSTEM_DOCUMENTATION.md). For manager instructions, see [`docs/USER_GUIDE.md`](../USER_GUIDE.md).
+
 ## Product position
 
 FPL Dashboard is a weekly planning and decision-support product for managers seeking a higher overall FPL rank. It converts a manager's real current squad, the official fixture schedule, player data, and a versioned projection model into complete five-Gameweek plans with explicit risk and tradeoffs.

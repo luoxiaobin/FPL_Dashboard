@@ -61,7 +61,14 @@ describe('planning workspace confirmed-squad bridge', () => {
     fetchFplJsonMock.mockReset();
   });
 
-  it('uses a confirmed import with official fixtures when public picks are unpublished', async () => {
+  it.each([
+    { allowance: 0, made: 0, status: 'unlimited', remaining: 0, unlimited: true },
+    { allowance: 1, made: 1, status: 'cost', remaining: 0, unlimited: false },
+    { allowance: 3, made: 1, status: 'cost', remaining: 2, unlimited: false },
+    { allowance: 1, made: 2, status: 'cost', remaining: 0, unlimited: false },
+  ])('uses the confirmed squad and tracks remaining transfers ($status, $allowance allowed, $made made)', async ({
+    allowance, made, status, remaining, unlimited,
+  }) => {
     fetchFplJsonMock.mockImplementation(async (path: string) => {
       if (path === '/api/bootstrap-static/') return {
         events: [{
@@ -86,12 +93,15 @@ describe('planning workspace confirmed-squad bridge', () => {
     const workspace = await buildPlanningWorkspace(
       3376378,
       DEFAULT_PLANNING_CONSTRAINTS,
-      importedSquad,
+      { ...importedSquad, transfers: { ...importedSquad.transfers, freeTransfers: allowance, transfersMade: made, status } },
     );
 
     expect(workspace.squadSource).toBe('authenticated-import');
     expect(workspace.sourceCapturedAt).toBe(capturedAt);
-    expect(workspace.transferState).toEqual({ freeTransfers: 0, unlimited: true });
+    expect(workspace.transferState).toEqual({ freeTransfers: remaining, unlimited });
+    if (!unlimited && remaining === 0) {
+      expect(workspace.scenarios.every(scenario => scenario.transfers.length === 0)).toBe(true);
+    }
     expect(workspace.scenarios).toHaveLength(3);
     expect(workspace.scenarios.every(scenario => scenario.squad.length === 15)).toBe(true);
     expect(workspace.scenarios.every(scenario => scenario.transferHit === 0)).toBe(true);

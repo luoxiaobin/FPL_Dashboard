@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import TransferComparison from '../TransferComparison';
 import { useRouter } from 'next/navigation';
 import type { PlanningScenario } from '@/server/planning/types';
 import styles from './PlanningWorkspace.module.css';
+import PlanExplanation from './PlanExplanation';
+import TeamNews from './TeamNews';
+import ChipOpportunities from './ChipOpportunities';
+import ReviewOnFpl, { type ReviewablePlan } from './ReviewOnFpl';
 import { clearConfirmedFplSquad } from '@/lib/fplSquadSession';
 
 interface PlayerSummary {
@@ -13,7 +18,7 @@ interface PlayerSummary {
   position: number;
   teamId: number;
   price: number;
-  expectedTotal: number;
+  expectedByGameweek?: number[];
   floor: number;
   ceiling: number;
   uncertainty: number;
@@ -33,8 +38,7 @@ interface WorkspacePayload {
   reproducibility: 'persisted' | 'degraded';
 }
 
-interface MyPlanSummary {
-  strategy: string;
+interface MyPlanSummary extends ReviewablePlan {
   selectedAt: string;
   frozenAt: string | null;
   outcome: { projectedPoints?: number; actualPoints?: number; projectionError?: number } | null;
@@ -60,7 +64,6 @@ export default function PlanningWorkspace() {
   const [excluded, setExcluded] = useState('');
   const [maxHit, setMaxHit] = useState(0);
   const [bankReserve, setBankReserve] = useState(0);
-  const [savedPlan, setSavedPlan] = useState<string | null>(null);
   const [myPlan, setMyPlan] = useState<MyPlanSummary | null>(null);
   const [usingConfirmedSquad, setUsingConfirmedSquad] = useState(false);
 
@@ -86,16 +89,6 @@ export default function PlanningWorkspace() {
       if (!response.ok) throw new Error(payload.error || 'Unable to generate scenarios');
       setData(payload);
       setUsingConfirmedSquad(payload.squadSource === 'authenticated-import');
-      setSavedPlan(null);
-      setMyPlan(null);
-      if (payload.reproducibility === 'persisted') {
-        const planResponse = await fetch(`/api/v1/planning/plans?gameweek=${payload.gameweek}`);
-        if (planResponse.ok) {
-          const planPayload = await planResponse.json();
-          setSavedPlan(planPayload.plan?.strategy ?? null);
-          setMyPlan(planPayload.plan ?? null);
-        }
-      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to generate scenarios');
     } finally {
@@ -104,6 +97,19 @@ export default function PlanningWorkspace() {
   };
 
   useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('/api/v1/planning/plans', { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(payload => {
+        if (!controller.signal.aborted && payload?.plan) {
+          setMyPlan(current => current ?? payload.plan);
+        }
+      })
+      .catch(() => { /* Saved-plan lookup is independent of scenario generation. */ });
+    return () => controller.abort();
+  }, []);
 
   const selectedScenario = useMemo(
     () => data?.scenarios.find(scenario => scenario.strategy === selected) ?? data?.scenarios[0],
@@ -133,7 +139,6 @@ export default function PlanningWorkspace() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to save My Plan');
-      setSavedPlan(selectedScenario.strategy);
       setMyPlan(payload.plan);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save My Plan');
@@ -185,6 +190,12 @@ export default function PlanningWorkspace() {
       {loading && !data && <section className={styles.state}><h2>Building your scenarios…</h2><p>Checking squad legality, projections and constraints.</p></section>}
 
       {data && <>
+        <TeamNews key={data.deadline} deadline={data.deadline} gameweek={data.gameweek}
+          relevantPlayers={Object.fromEntries(data.scenarios.flatMap(scenario => [
+            ...scenario.squad, ...scenario.transfers.map(transfer => transfer.outPlayerId),
+          ]).map(id => [id, playerName(id)]))} />
+        <ChipOpportunities gameweek={data.gameweek} confirmedSquad={usingConfirmedSquad}
+          advice={data.scenarios.find(scenario => scenario.strategy === 'balanced')?.chipAdvice} />
         {allPlansConverge && <aside className={styles.convergence}><strong>Robust recommendation</strong><span>All three risk profiles converge on the same move, lineup and captain under current data. The point ranges below show its floor, expected outcome and ceiling—not three artificially different answers.</span></aside>}
         <section className={styles.scenarioGrid} aria-label="Planning scenarios">
           {data.scenarios.map(scenario => {
@@ -205,7 +216,7 @@ export default function PlanningWorkspace() {
         </section>
 
         {selectedScenario && <section className={styles.detail}>
-          <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={() => void savePlan()} disabled={!selectedScenario.scenarioId}>{savedPlan === selectedScenario.strategy ? 'Saved as My Plan' : selectedScenario.scenarioId ? 'Mark as My Plan' : 'Plan storage unavailable'}</button></div>
+          <div className={styles.detailHeader}><div><p className={styles.eyebrow}>Selected scenario</p><h2>{selectedScenario.label}</h2></div><button className={styles.planButton} onClick={() => void savePlan()} disabled={!selectedScenario.scenarioId}>{selectedScenario.scenarioId && myPlan?.scenarioId === selectedScenario.scenarioId ? 'Saved as My Plan' : selectedScenario.scenarioId ? 'Mark as My Plan' : 'Plan storage unavailable'}</button></div>
           <p className={styles.tradeoff}>{selectedScenario.tradeoff}</p>
           <div className={styles.metrics}>
             <div><span>Five-GW {projectionLabel(selectedScenario.strategy)}</span><strong>{formatNumber(selectedScenario.projectedFiveGameweekPoints)}</strong></div>
@@ -213,18 +224,23 @@ export default function PlanningWorkspace() {
             <div><span>Captain</span><strong>{playerName(selectedScenario.captainId)}</strong></div>
             <div><span>Vice captain</span><strong>{playerName(selectedScenario.viceCaptainId)}</strong></div>
           </div>
-          <h3>Starting XI</h3>
-          <ol className={styles.playerList}>{selectedScenario.startingEleven.map(id => <li key={id}><span>{playerName(id)}</span><span>{formatNumber(data.players[String(id)]?.expectedTotal)} pts</span></li>)}</ol>
+          <TransferComparison scenario={selectedScenario} gameweek={data.gameweek} />
+          <h3>GW{data.gameweek} Starting XI</h3>
+          <ol className={styles.playerList}>{selectedScenario.startingEleven.map(id => <li key={id}><span>{playerName(id)}</span><span>{formatNumber(data.players[String(id)]?.expectedByGameweek?.[0])} pts</span></li>)}</ol>
           <h3>Bench order</h3>
           <ol className={styles.bench}>{selectedScenario.bench.map(id => <li key={id}>{playerName(id)}</li>)}</ol>
           <p className={styles.freshness}>Snapshot updated {new Date(data.capturedAt).toLocaleString()} · Model {selectedScenario.modelVersion}</p>
-          {myPlan && <p className={styles.freshness}>{myPlan.outcome
+        </section>}
+      </>}
+      {myPlan && <section className={styles.savedPlan} aria-label="My Plan">
+        {myPlan.decisions && <ReviewOnFpl key={myPlan.id} plan={myPlan} />}
+        {myPlan.scenarioId && <PlanExplanation key={myPlan.scenarioId} scenarioId={myPlan.scenarioId} />}
+        <p className={styles.freshness}>{myPlan.outcome
               ? `My Plan evaluated: ${formatNumber(myPlan.outcome.actualPoints, 0)} actual vs ${formatNumber(myPlan.outcome.projectedPoints)} projected (${Number(myPlan.outcome.projectionError ?? 0) >= 0 ? '+' : ''}${formatNumber(myPlan.outcome.projectionError)}).`
             : myPlan.frozenAt
               ? `My Plan frozen at the deadline; awaiting finalized FPL results.`
-              : `My Plan saved ${new Date(myPlan.selectedAt).toLocaleString()} and will freeze at the deadline.`}</p>}
-        </section>}
-      </>}
+              : `My Plan saved ${new Date(myPlan.selectedAt).toLocaleString()} and will freeze at the deadline.`}</p>
+      </section>}
     </main>
   );
 }

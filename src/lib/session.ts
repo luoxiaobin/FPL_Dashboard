@@ -10,6 +10,17 @@ import { supabaseAdmin } from '@/lib/supabase';
 export const SESSION_COOKIE = 'fpl_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 365; // 1 year, matches previous cookie lifetime
 
+export const useLocalSessions = process.env.NODE_ENV === 'development'
+  && !process.env.NEXT_PUBLIC_SUPABASE_URL
+  && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  && !process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Share sessions across dev route modules and hot reloads within this process.
+const devGlobal = globalThis as typeof globalThis & {
+  fplLocalSessions?: Map<string, { entryId: number; expiresAt: number }>;
+};
+const localSessions = useLocalSessions ? (devGlobal.fplLocalSessions ??= new Map()) : undefined;
+
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
@@ -34,6 +45,15 @@ export async function createSession(entryId: number | string): Promise<string> {
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
   const numericEntryId = typeof entryId === 'string' ? parseInt(entryId, 10) : entryId;
+
+  if (localSessions) {
+    const now = Date.now();
+    for (const [hash, session] of localSessions) {
+      if (session.expiresAt <= now) localSessions.delete(hash);
+    }
+    localSessions.set(tokenHash, { entryId: numericEntryId, expiresAt: now + SESSION_TTL_MS });
+    return token;
+  }
 
   const { error } = await supabaseAdmin.from('fpl_sessions').insert({
     token_hash: tokenHash,
@@ -68,6 +88,12 @@ export async function getEntryIdFromSession(req: NextRequest): Promise<string | 
   if (!token) return null;
 
   const tokenHash = hashToken(token);
+  if (localSessions) {
+    const session = localSessions.get(tokenHash);
+    if (!session || session.expiresAt <= Date.now()) return null;
+    return String(session.entryId);
+  }
+
   const { data, error } = await supabaseAdmin
     .from('fpl_sessions')
     .select('fpl_entry_id, expires_at, revoked_at')
@@ -86,6 +112,11 @@ export async function revokeSession(req: NextRequest): Promise<void> {
   if (!token) return;
 
   const tokenHash = hashToken(token);
+  if (localSessions) {
+    localSessions.delete(tokenHash);
+    return;
+  }
+
   const { error } = await supabaseAdmin
     .from('fpl_sessions')
     .update({ revoked_at: new Date().toISOString() })

@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
       capturedAt: stored?.payload.capturedAt ?? null,
       confirmedAt: stored?.confirmedAt ?? null,
       expiresAt: stored?.expiresAt ?? null,
+      picks: stored?.payload.picks.map(({ elementId, lineupPosition, isCaptain, isViceCaptain }) => ({
+        elementId, lineupPosition, isCaptain, isViceCaptain,
+      })) ?? null,
     });
   } catch {
     return NextResponse.json({ error: 'Unable to load confirmed squad' }, { status: 503 });

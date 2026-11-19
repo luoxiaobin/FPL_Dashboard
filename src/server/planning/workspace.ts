@@ -1,6 +1,7 @@
 import 'server-only';
 import { fetchFplJson, FplUpstreamError } from '@/server/fpl/client';
 import { projectPlayer } from '@/server/projections/model';
+import { buildChipAdvice } from './chipAdvice';
 import { generatePlanningScenarios } from '@/server/scenarios/generator';
 import type { PlanningConstraints, Position } from '@/server/planning/types';
 import type { FplSquadImport } from '@/lib/fplSquadImport';
@@ -53,9 +54,11 @@ const asPosition = (value: number): Position => {
 
 export async function buildPlanningWorkspace(entryId: number, constraints: PlanningConstraints, importedSquad?: FplSquadImport) {
   const capturedAt = new Date();
-  const [bootstrap, fixtures] = await Promise.all([
+  const [bootstrap, fixtures, entryHistory] = await Promise.all([
     fetchFplJson<BootstrapPayload>('/api/bootstrap-static/', { cacheSeconds: 300 }),
     fetchFplJson<FixturePayload[]>('/api/fixtures/', { cacheSeconds: 300 }),
+    fetchFplJson<{ chips: Array<{ event: number; name: string }> }>(`/api/entry/${entryId}/history/`, { cacheSeconds: 60 })
+      .catch(() => null),
   ]);
   const planningEvent = selectPlanningGameweek(bootstrap.events);
   const publishedSquadEvent = selectPublishedSquadGameweek(bootstrap.events, planningEvent);
@@ -126,16 +129,28 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
 
   const squad = projections.filter(player => squadIds.has(player.id));
   const candidates = projections.filter(player => !squadIds.has(player.id));
+  const importedTransfers = squadSource === 'authenticated-import' ? importedSquad?.transfers : undefined;
+  // The v1 import stores FPL's total Gameweek allowance in freeTransfers.
+  const transferState = importedTransfers ? {
+    freeTransfers: importedTransfers.freeTransfers === null
+      ? null
+      : Math.max(0, importedTransfers.freeTransfers - importedTransfers.transfersMade),
+    unlimited: importedTransfers.status === 'unlimited',
+  } : { freeTransfers: 1, unlimited: false };
   const scenarios = generatePlanningScenarios(
     squad,
     candidates,
     (picks.entry_history?.bank ?? 0) / 10,
     constraints,
-    squadSource === 'authenticated-import' && importedSquad ? {
-      freeTransfers: importedSquad.transfers.freeTransfers ?? 0,
-      unlimited: importedSquad.transfers.status === 'unlimited',
-    } : undefined,
-  );
+    { ...transferState, freeTransfers: transferState.freeTransfers ?? 0 },
+  ).map(scenario => {
+    if (scenario.strategy !== 'balanced') return scenario;
+    const chipAdvice = buildChipAdvice(
+      scenario.squad.map(id => projections.find(player => player.id === id)!),
+      gameweeks, bootstrap.events, entryHistory?.chips ?? null, importedSquad?.activeChip ?? null,
+    );
+    return chipAdvice ? { ...scenario, chipAdvice, modelVersion: `${scenario.modelVersion}-chips-v1` } : scenario;
+  });
   const playerSummaries = Object.fromEntries(projections.map(player => [player.id, {
     id: player.id,
     name: player.name,
@@ -143,6 +158,7 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     teamId: player.teamId,
     price: player.price,
     expectedTotal: player.expectedTotal,
+    expectedByGameweek: player.expectedByGameweek,
     floor: player.floor,
     ceiling: player.ceiling,
     uncertainty: player.uncertainty,
@@ -159,10 +175,7 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
     squadSource,
     squadGameweek,
     sourceCapturedAt: squadSource === 'authenticated-import' ? importedSquad!.capturedAt : capturedAt.toISOString(),
-    transferState: squadSource === 'authenticated-import' ? {
-      freeTransfers: importedSquad!.transfers.freeTransfers,
-      unlimited: importedSquad!.transfers.status === 'unlimited',
-    } : { freeTransfers: 1, unlimited: false },
+    transferState,
     scenarios,
     players: playerSummaries,
     _reproducibility: {
@@ -173,9 +186,9 @@ export async function buildPlanningWorkspace(entryId: number, constraints: Plann
       horizonGameweeks: gameweeks.length,
       bootstrap,
       fixtures,
-      entryPayload: { entryId, squadSource, squadGameweek },
+      entryPayload: { entryId, squadSource, squadGameweek, chipHistory: entryHistory?.chips ?? null },
       picksPayload: picks,
-      transfersPayload: importedSquad?.transfers ?? null,
+      transfersPayload: importedSquad ? { ...importedSquad.transfers, activeChip: importedSquad.activeChip } : null,
       players: playerSummaries,
     },
   };

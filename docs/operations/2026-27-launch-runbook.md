@@ -1,5 +1,7 @@
 # FPL 2026–27 launch runbook
 
+This runbook should be used with the current [system documentation](../SYSTEM_DOCUMENTATION.md). Manager-facing synchronization and verification instructions are in the [user guide](../USER_GUIDE.md).
+
 ## Release identity
 
 Production is `https://fpl-dashboard-seven-pi.vercel.app`. Treat the release shown by `/api/v1/health` and the footer badge as authoritative. The semantic version and short commit SHA must match the intended release.
@@ -27,10 +29,12 @@ Run these checks once Friday morning and again 30 minutes before the 13:30 Ameri
 
 1. Open `/api/v1/health`; require `status: ready` and all checks `pass`.
 2. Confirm the displayed release is the expected version and commit.
-3. Run the Safari bookmark from FPL's signed-in Pick Team page.
+3. Run the dashboard bookmark from FPL's signed-in Pick Team page, or confirm that the paired userscript has produced a newer sync.
 4. Review all 15 players, captain, vice captain, and bank, then confirm the squad.
-5. Open `/planning` in a new tab and require `Confirmed squad connected`.
+5. Open `/planning` in a new tab and require `Confirmed squad connected` with the expected sync time.
 6. Regenerate scenarios and confirm Floor, Balanced, and Upside render without an error.
+7. If My Plan is already saved, run **Check latest sync** and verify the intended squad, XI, captain, vice captain, and bench order independently.
+8. Check Team News source and processing times. Treat missing or stale curated news as unavailable rather than current.
 
 Do not deploy non-critical changes inside the final 60 minutes before the deadline.
 

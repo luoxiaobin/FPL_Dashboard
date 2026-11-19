@@ -30,6 +30,22 @@ export interface PlanningTransfer {
   expectedGain: number;
 }
 
+export type ScoringChip = 'bboost' | '3xc';
+export interface ChipAdvice {
+  expiresGameweek: number;
+  deadline: string | null;
+  activeChip: string | null;
+  throughGameweek: number;
+  recommendation: ScoringChip | null;
+  options: Array<{
+    chip: ScoringChip;
+    used: boolean;
+    currentPoints: number;
+    best: { gameweek: number; points: number };
+    later: { gameweek: number; points: number } | null;
+  }>;
+}
+
 export interface PlanningScenario {
   scenarioId?: string;
   strategy: ScenarioStrategy;
@@ -42,9 +58,17 @@ export interface PlanningScenario {
   captainId: number;
   viceCaptainId: number;
   chip: null;
+  chipAdvice?: ChipAdvice;
   bankRemaining: number;
   projectedGameweekPoints: number;
   projectedFiveGameweekPoints: number;
+  versusHold?: {
+    gameweekPoints: number;
+    horizonPoints: number;
+    gameweekGain: number;
+    horizonGain: number;
+    horizonGameweeks: number;
+  };
   uncertainty: number;
   tradeoff: string;
   modelVersion: string;

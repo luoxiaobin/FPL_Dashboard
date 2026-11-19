@@ -7,6 +7,8 @@ import {
 } from '@/server/planning/types';
 import { PROJECTION_MODEL_VERSION } from '@/server/projections/model';
 
+const SCENARIO_MODEL_VERSION = `${PROJECTION_MODEL_VERSION}-weekly-xi-v2`;
+
 const STRATEGIES: ScenarioStrategy[] = ['floor', 'balanced', 'upside'];
 
 export interface PlanningTransferContext {
@@ -22,12 +24,12 @@ const strategyScore = (player: PlayerProjection, strategy: ScenarioStrategy) => 
   return player.expectedTotal;
 };
 
-function chooseStartingEleven(players: PlayerProjection[], strategy: ScenarioStrategy) {
+export function chooseStartingEleven(players: PlayerProjection[], scorePlayer: (player: PlayerProjection) => number) {
   const grouped = new Map<Position, PlayerProjection[]>();
   ([1, 2, 3, 4] as Position[]).forEach(position => {
     grouped.set(position, players
       .filter(player => player.position === position)
-      .sort((a, b) => strategyScore(b, strategy) - strategyScore(a, strategy)));
+      .sort((a, b) => scorePlayer(b) - scorePlayer(a)));
   });
 
   let best: PlayerProjection[] = [];
@@ -43,7 +45,8 @@ function chooseStartingEleven(players: PlayerProjection[], strategy: ScenarioStr
         ...(grouped.get(4)?.slice(0, forwards) ?? []),
       ];
       if (candidate.length !== 11) continue;
-      const score = candidate.reduce((sum, player) => sum + strategyScore(player, strategy), 0);
+      const scores = candidate.map(scorePlayer);
+      const score = scores.reduce((sum, value) => sum + value, Math.max(...scores));
       if (score > bestScore) {
         best = candidate;
         bestScore = score;
@@ -96,6 +99,29 @@ function buildScenario(
   strategy: ScenarioStrategy,
   transferContext: PlanningTransferContext,
 ): PlanningScenario {
+  const scoreForWeek = (index: number) => (player: PlayerProjection) => {
+    const expected = player.expectedByGameweek[index] ?? 0;
+    if (player.expectedTotal <= 0) return expected;
+    return expected * (strategyScore(player, strategy) / player.expectedTotal);
+  };
+  const horizon = Math.max(...initialSquad.map(player => player.expectedByGameweek.length));
+  const transfersHit = (count: number) => transferContext.unlimited
+    ? 0
+    : Math.max(0, count - transferContext.freeTransfers) * 4;
+  const projectSquad = (roster: PlayerProjection[], hit: number) => {
+    const weeks = Array.from({ length: Math.max(1, horizon) }, (_, index) => {
+      const score = scoreForWeek(index);
+      const starters = chooseStartingEleven(roster, score);
+      const scores = starters.map(score);
+      return scores.reduce((sum, points) => sum + points, Math.max(...scores));
+    });
+    return {
+      gameweekPoints: weeks[0] - hit,
+      horizonPoints: weeks.reduce((sum, points) => sum + points, 0) - hit,
+    };
+  };
+  const hold = projectSquad(initialSquad, 0);
+  let forecast = hold;
   let squad = [...initialSquad];
   let bankRemaining = bank;
   const transfers: Array<{ out: PlayerProjection; incoming: PlayerProjection; gain: number }> = [];
@@ -105,38 +131,23 @@ function buildScenario(
   for (let transferIndex = 0; transferIndex < maxTransfers; transferIndex += 1) {
     const transfer = bestSingleTransfer(squad, candidates, bankRemaining, constraints, strategy);
     if (!transfer || (transferIndex > 0 && transfer.gain <= 4)) break;
-    squad = squad.map(player => player.id === transfer.out.id ? transfer.incoming : player);
+    const proposed = squad.map(player => player.id === transfer.out.id ? transfer.incoming : player);
+    const proposedForecast = projectSquad(proposed, transfersHit(transfers.length + 1));
+    if (proposedForecast.horizonPoints <= forecast.horizonPoints) break;
+    squad = proposed;
+    forecast = proposedForecast;
     bankRemaining += transfer.out.sellingPrice - transfer.incoming.price;
     transfers.push(transfer);
   }
-  const transferHit = transferContext.unlimited
-    ? 0
-    : Math.max(0, transfers.length - transferContext.freeTransfers) * 4;
-  const starters = chooseStartingEleven(squad, strategy);
+  const transferHit = transfersHit(transfers.length);
+  const scoreThisWeek = scoreForWeek(0);
+  const starters = chooseStartingEleven(squad, scoreThisWeek);
   const starterIds = new Set(starters.map(player => player.id));
   const bench = squad
     .filter(player => !starterIds.has(player.id))
-    .sort((a, b) => {
-      if (a.position === 1) return 1;
-      if (b.position === 1) return -1;
-      return strategyScore(b, strategy) - strategyScore(a, strategy);
-    });
-  const captaincy = [...starters].sort((a, b) => strategyScore(b, strategy) - strategyScore(a, strategy));
-  const captain = captaincy[0];
-  const viceCaptain = captaincy[1];
-  const gameweekStrategyScore = (player: PlayerProjection) => {
-    const expected = player.expectedByGameweek[0] ?? 0;
-    if (player.expectedTotal <= 0) return expected;
-    return expected * (strategyScore(player, strategy) / player.expectedTotal);
-  };
-  const projectedGameweekPoints = starters.reduce(
-    (sum, player) => sum + gameweekStrategyScore(player),
-    gameweekStrategyScore(captain),
-  ) - transferHit;
-  const projectedFiveGameweekPoints = starters.reduce(
-    (sum, player) => sum + strategyScore(player, strategy),
-    strategyScore(captain, strategy),
-  ) - transferHit;
+    .sort((a, b) => Number(a.position === 1) - Number(b.position === 1) || scoreThisWeek(b) - scoreThisWeek(a));
+  const [captain, viceCaptain] = [...starters].sort((a, b) => scoreThisWeek(b) - scoreThisWeek(a));
+  const round = (points: number) => Number(points.toFixed(2));
 
   const labels = { floor: 'Floor', balanced: 'Balanced', upside: 'Upside' };
   const tradeoffs = {
@@ -162,11 +173,18 @@ function buildScenario(
     viceCaptainId: viceCaptain.id,
     chip: null,
     bankRemaining: Number(bankRemaining.toFixed(1)),
-    projectedGameweekPoints: Number(projectedGameweekPoints.toFixed(2)),
-    projectedFiveGameweekPoints: Number(projectedFiveGameweekPoints.toFixed(2)),
+    projectedGameweekPoints: round(forecast.gameweekPoints),
+    projectedFiveGameweekPoints: round(forecast.horizonPoints),
+    versusHold: {
+      gameweekPoints: round(hold.gameweekPoints),
+      horizonPoints: round(hold.horizonPoints),
+      gameweekGain: round(forecast.gameweekPoints - hold.gameweekPoints),
+      horizonGain: round(forecast.horizonPoints - hold.horizonPoints),
+      horizonGameweeks: Math.max(1, horizon),
+    },
     uncertainty: Number((starters.reduce((sum, player) => sum + player.uncertainty, 0) / 11).toFixed(2)),
     tradeoff: tradeoffs[strategy],
-    modelVersion: PROJECTION_MODEL_VERSION,
+    modelVersion: SCENARIO_MODEL_VERSION,
   };
 }
 

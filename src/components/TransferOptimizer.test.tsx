@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { PlanningScenario } from '@/server/planning/types';
 import TransferOptimizer from './TransferOptimizer';
 
@@ -66,6 +66,34 @@ describe('TransferOptimizer planning recommendation', () => {
     expect(screen.getByText('+8.3 pts')).toBeTruthy();
     expect(screen.getByText('312.2 pts')).toBeTruthy();
     expect(screen.getByText('Using your published GW1 squad', { exact: false })).toBeTruthy();
+  });
+
+  it('shows the squad comparison alongside the individual player projection gain', async () => {
+    const move = payload([{ outPlayerId: 1, inPlayerId: 2, cost: 0.4, expectedGain: 8.3 }]);
+    move.scenarios[0].versusHold = {
+      gameweekPoints: 32, horizonPoints: 306, gameweekGain: -1.4, horizonGain: 6.2, horizonGameweeks: 5,
+    };
+    mockResponse(move);
+    render(<TransferOptimizer />);
+    await screen.findByRole('table', { name: 'Transfer vs. hold' });
+    expect(screen.getByText('-1.40 pts')).toBeTruthy();
+    expect(screen.getByText('+6.20 pts')).toBeTruthy();
+    expect(screen.getByText('Player projection gain')).toBeTruthy();
+  });
+
+  it('rechecks the recommendation when returning after an FPL sync', async () => {
+    const old = payload([{ outPlayerId: 1, inPlayerId: 2, cost: 0.4, expectedGain: 8.3 }]);
+    const synced = { ...payload([]), squadSource: 'authenticated-import', sourceCapturedAt: old.capturedAt };
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({ ok: true, json: async () => old } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => synced } as Response);
+    render(<TransferOptimizer />);
+    expect((await screen.findByRole('link', { name: 'Sync your current squad' })).getAttribute('href'))
+      .toBe('/planning/import');
+    fireEvent.focus(window);
+    await screen.findByText(/Using your confirmed pre-deadline squad · Squad synced/);
+    expect(screen.queryByText('Make the move')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Sync your current squad' })).toBeNull();
   });
 
   it('explains a hold recommendation instead of claiming the squad is optimal', async () => {

@@ -68,5 +68,6 @@ describe('DashboardShell authentication gate', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/user/summary');
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/squad/live')).toBe(true);
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/user/preferences')).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/planning/backtest')).toBe(true);
   });
 });

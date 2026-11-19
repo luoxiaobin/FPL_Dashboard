@@ -14,6 +14,7 @@ import FixtureTicker from '../components/FixtureTicker';
 import TransferAnalyser from '../components/TransferAnalyser';
 import CaptaincyAdviser from '../components/CaptaincyAdviser';
 import TransferOptimizer from '../components/TransferOptimizer';
+import PlanningBacktest from '../components/PlanningBacktest';
 import GwModeIndicator from '../components/GwModeIndicator';
 import { DEFAULT_SECTION_PREFERENCES, SECTION_KEYS, SectionPreferences } from '@/lib/sectionPreferences';
 import {
@@ -284,6 +285,7 @@ export default function DashboardShell() {
       </div>
 
       {panelNodes}
+      <PlanningBacktest />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 # Weekly Planning Workspace — V1 Product Specification
 
+> This is the original V1 specification. The current implemented capability and its limitations are documented in [`docs/SYSTEM_DOCUMENTATION.md`](../SYSTEM_DOCUMENTATION.md), while the manager workflow is documented in [`docs/USER_GUIDE.md`](../USER_GUIDE.md).
+
 ## Product promise
 
 Help serious FPL managers make higher-expected-value weekly decisions without requiring mini-league or rival data.

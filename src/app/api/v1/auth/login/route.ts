@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { createSession, setSessionCookie } from '@/lib/session';
+import { createSession, setSessionCookie, useLocalSessions } from '@/lib/session';
 import { fplFetch, toSafeId } from '@/lib/upstreamFetch';
 
 export async function POST(req: NextRequest) {
@@ -40,16 +40,18 @@ export async function POST(req: NextRequest) {
     const safeTeamName = sanitize(teamName ?? '');
 
     // Persist user profile to Supabase (upsert gracefully handles returning users)
-    const { error: dbError } = await supabaseAdmin
-      .from('users')
-      .upsert(
-        { fpl_entry_id: entryId, team_name: safeTeamName },
-        { onConflict: 'fpl_entry_id' }
-      );
+    if (!useLocalSessions) {
+      const { error: dbError } = await supabaseAdmin
+        .from('users')
+        .upsert(
+          { fpl_entry_id: entryId, team_name: safeTeamName },
+          { onConflict: 'fpl_entry_id' }
+        );
 
-    if (dbError) {
-      // Log but don't block login — DB write is best-effort
-      console.error('Supabase upsert error:', dbError.message);
+      if (dbError) {
+        // Log but don't block login — DB write is best-effort
+        console.error('Supabase upsert error:', dbError.message);
+      }
     }
 
     // H1 fix: issue a random session token mapped to the entry ID server-side,

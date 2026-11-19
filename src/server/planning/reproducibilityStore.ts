@@ -170,6 +170,19 @@ export async function persistPlanningRun(
   return new Map(matching.map(row => [row.strategy, row.id]));
 }
 
+function getSavedPlayerNames(
+  projections: { players?: Record<string, { name: string }> } | null | undefined,
+  decisions: Record<string, unknown>,
+): Record<string, string> {
+  const squad = Array.isArray(decisions.squad) ? decisions.squad : [];
+  const transfers = Array.isArray(decisions.transfers) ? decisions.transfers : [];
+  const ids = new Set([...squad, ...transfers.map(transfer => transfer.outPlayerId)]);
+  return Object.fromEntries([...ids].flatMap(id => {
+    const name = projections?.players?.[String(id)]?.name;
+    return typeof name === 'string' ? [[String(id), name]] : [];
+  }));
+}
+
 export interface StoredMyPlan {
   id: string;
   scenarioId: string;
@@ -178,6 +191,7 @@ export interface StoredMyPlan {
   selectedAt: string;
   frozenAt: string | null;
   decisions: Record<string, unknown>;
+  playerNames: Record<string, string>;
   outcome: Record<string, unknown> | null;
 }
 
@@ -270,9 +284,10 @@ export async function saveMyPlan(entryId: number, scenarioId: string): Promise<S
     entry_snapshot_id: string;
     strategy: string;
     decisions: Record<string, unknown>;
+    projections: { players?: Record<string, { name: string }> };
   }>(supabaseAdmin
     .from('planning_scenarios')
-    .select('id, entry_snapshot_id, strategy, decisions')
+    .select('id, entry_snapshot_id, strategy, decisions, projections')
     .eq('id', scenarioId)
     .single(), 'Unable to load planning scenario');
   const snapshot = await requireRow<{ fpl_entry_id: number; gameweek_id: number }>(supabaseAdmin
@@ -313,6 +328,7 @@ export async function saveMyPlan(entryId: number, scenarioId: string): Promise<S
     selectedAt: selected.selected_at,
     frozenAt: selected.frozen_at,
     decisions: selected.selected_decisions,
+    playerNames: getSavedPlayerNames(scenario.projections, selected.selected_decisions),
     outcome: selected.outcome,
   };
 }
@@ -326,9 +342,13 @@ export async function loadLatestMyPlan(entryId: number, gameweek?: number): Prom
     .limit(10);
   if (error) throw new Error(`Unable to load My Plan: ${error.message}`);
   for (const selection of data ?? []) {
-    const scenario = await requireRow<{ entry_snapshot_id: string; strategy: string }>(supabaseAdmin
+    const scenario = await requireRow<{
+      entry_snapshot_id: string;
+      strategy: string;
+      projections: { players?: Record<string, { name: string }> };
+    }>(supabaseAdmin
       .from('planning_scenarios')
-      .select('entry_snapshot_id, strategy')
+      .select('entry_snapshot_id, strategy, projections')
       .eq('id', selection.scenario_id)
       .single(), 'Unable to load selected scenario');
     const snapshot = await requireRow<{ gameweek_id: number }>(supabaseAdmin
@@ -345,6 +365,7 @@ export async function loadLatestMyPlan(entryId: number, gameweek?: number): Prom
       selectedAt: selection.selected_at,
       frozenAt: selection.frozen_at,
       decisions: selection.selected_decisions,
+      playerNames: getSavedPlayerNames(scenario.projections, selection.selected_decisions),
       outcome: selection.outcome,
     }, entryId);
   }
