@@ -34,4 +34,10 @@ describe('GwModeIndicator', () => {
     const btn = screen.getByRole('button', { name: /live/i });
     expect(btn.getAttribute('aria-label')).toMatch(/live/i);
   });
+
+  it('identifies a manual override', () => {
+    render(<GwModeIndicator mode="planning" overridden onOverride={() => {}} />);
+    expect(screen.getByRole('button', { name: /manual override/i })).toBeTruthy();
+    expect(screen.getByText(/override/i)).toBeTruthy();
+  });
 });

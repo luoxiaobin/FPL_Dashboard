@@ -56,13 +56,20 @@ export default function DashboardShell() {
   const [planningOrder, setPlanningOrder] = useState<PanelKey[]>(PLANNING_DEFAULT_ORDER);
   const [liveOrder, setLiveOrder] = useState<PanelKey[]>(LIVE_DEFAULT_ORDER);
   const [modeOverride, setModeOverride] = useState<GwMode | null>(() => getStoredModeOverride());
+  const [modeNotice, setModeNotice] = useState('');
   const router = useRouter();
-  const autoMode = useGwMode(authStatus === 'authenticated');
+  const handleAutoTransition = useCallback((next: GwMode) => {
+    setStoredModeOverride(null);
+    setModeOverride(null);
+    setModeNotice(`Gameweek status changed — switched to ${next === 'live' ? 'Live' : 'Planning'} mode.`);
+  }, []);
+  const autoMode = useGwMode(authStatus === 'authenticated', handleAutoTransition);
   const effectiveMode: GwMode = modeOverride ?? autoMode;
 
   const handleOverride = useCallback((next: GwMode) => {
     setStoredModeOverride(next);
     setModeOverride(next);
+    setModeNotice('');
   }, []);
 
   const getScoreLabel = () => {
@@ -239,7 +246,7 @@ export default function DashboardShell() {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <GwModeIndicator mode={effectiveMode} onOverride={handleOverride} />
+          <GwModeIndicator mode={effectiveMode} overridden={modeOverride !== null} onOverride={handleOverride} />
           <button
             onClick={() => router.push('/settings')}
             className={styles.settingsBtn}
@@ -252,6 +259,7 @@ export default function DashboardShell() {
           </button>
         </div>
       </header>
+      {modeNotice && <p className={styles.modeNotice} role="status">{modeNotice}</p>}
 
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>

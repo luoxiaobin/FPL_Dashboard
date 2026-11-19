@@ -1,8 +1,26 @@
 # Mobile-First UI Pass — Design Specification
 
-**Date:** 2026-04-26  
+**Original date:** 2026-04-26
+
+**Continuity update:** 2026-11-19
+
 **Target device:** iPhone 16 portrait (393px CSS viewport width)  
 **Priority:** Portrait mode first; landscape and tablet are secondary.
+
+## Current status
+
+Mobile remains a release requirement for the full product, including features added after the original UI pass. The core dashboard has automated mobile coverage. The November continuity pass extends the acceptance surface to Planning, private squad access, Team News, chip opportunities, My Plan, official-FPL verification, explanations, settings, and backtesting.
+
+The implementation uses desktop defaults with narrow-screen overrides, so the CSS architecture is responsive rather than strictly mobile-first by source order. Product decisions, touch targets, information priority, and acceptance testing remain mobile-first.
+
+### Mobile release gates
+
+- The supported portrait viewport must not produce document-level horizontal overflow.
+- Primary buttons and controls must have a minimum 44px touch height.
+- Wide data visualizations may scroll inside a clearly bounded container.
+- Planning must remain usable from squad status through saving and reviewing My Plan.
+- AI attribution, source freshness, chip caveats, transfer hits, and verification results must remain visible without requiring a desktop viewport.
+- Core dashboard and Planning mobile Playwright checks must pass before release.
 
 ---
 
@@ -21,16 +39,7 @@ The dashboard has two distinct use cases that drive completely different panel o
 
 A new custom hook reads the `status` field from `/api/v1/squad/live` and maps it to a mode:
 
-```ts
-// src/hooks/useGwMode.ts
-type GwMode = 'planning' | 'live';
-
-export function useGwMode(): {
-  mode: GwMode;
-  override: GwMode | null;
-  setOverride: (m: GwMode | null) => void;
-}
-```
+`useGwMode` polls the summary API and returns the automatic `planning` or `live` mode. The dashboard shell owns the optional manual override and stores it through the helpers in `src/hooks/useGwMode.ts`.
 
 - `status === 'live'` → `mode = 'live'`
 - `status === 'provisional'` or `status === 'official'` → `mode = 'planning'`
@@ -38,16 +47,16 @@ export function useGwMode(): {
 
 ### Override behaviour
 
-- Override is stored in `sessionStorage` (clears on page reload — intentional)
+- Override is stored in `sessionStorage`. It survives reloads in the same tab and clears when the tab or browser session closes.
 - If the GW status flips while the user is browsing, clear any stale override and notify: `"Gameweek has started — switched to Live mode"`
 - Hook polls every 60 seconds
 
 ### Summary API extension
 
-`/api/v1/user/summary` response gains one field:
+`/api/v1/user/summary` provides the current mode field:
 
 ```ts
-{ gw_status: 'live' | 'provisional' | 'official' | 'between' }
+{ current_event_status: 'live' | 'planning' }
 ```
 
 This avoids a separate round-trip for mode detection.
@@ -84,35 +93,35 @@ Dropdown explains the current auto-detection reason:
 
 ### System defaults
 
-**Planning mode order** (transfers, analysis first):
-1. TransferOptimizer
-2. CaptaincyAdviser
-3. FixtureTicker
-4. LivePoints
-5. SquadPitch
+**Planning mode order** (squad trust, transfers, analysis first):
+1. SyncStatus
+2. TransferOptimizer
+3. CaptaincyAdviser
+4. TransferAnalyser
+5. RankProjection
 6. LeagueStandings
-7. LeagueLive
-8. RivalCompare
-9. RankProjection
-10. HistoryChart
-11. GameweekHistory
-12. TransferAnalyser
-13. SyncStatus
+7. HistoryChart
+8. GameweekHistory
+9. FixtureTicker
+10. GW Live
+11. LeagueLive
+12. RivalCompare
 
 **Live mode order** (points tracking first):
-1. LivePoints
-2. SquadPitch
+1. SyncStatus
+2. GW Live
 3. LeagueLive
-4. LeagueStandings
-5. RivalCompare
-6. CaptaincyAdviser
+4. CaptaincyAdviser
+5. RankProjection
+6. LeagueStandings
 7. FixtureTicker
-8. RankProjection
-9. TransferOptimizer
+8. TransferOptimizer
+9. TransferAnalyser
 10. HistoryChart
 11. GameweekHistory
-12. TransferAnalyser
-13. SyncStatus
+12. RivalCompare
+
+The combined GW Live panel replaces the separate legacy LivePoints and SquadPitch render slots. Legacy keys remain accepted when merging older saved preferences.
 
 ### User customisation
 
@@ -221,6 +230,34 @@ Accommodate `GwModeIndicator` pill at 393px:
 }
 ```
 
+### Planning workspace and private squad flow
+
+At 560px and below:
+
+- page padding is reduced while preserving readable card gutters
+- deadline and import controls stack vertically
+- constraint controls use a single column and a full-width regenerate button
+- scenario cards become horizontally swipeable snap cards without a document-level overflow
+- plan metrics and player lists use one column
+- the transfer-versus-hold table scrolls inside its own container
+- the bench uses a two-column ordered grid
+- the save-plan control becomes full width
+- Review on FPL uses one column, including the Starting XI list
+- verification actions become full-width 44px controls
+- Team News source links retain a 44px touch height
+
+The squad-import review changes to one player per row at 680px and below. At the narrowest supported width, captaincy badges move to a second grid row rather than squeezing the player name.
+
+### Settings
+
+At 560px and below, the header, mode tabs, and save/reset actions use stacked or two-column mobile layouts. Panel reorder controls are 44×44px. The label row remains large enough to tap without precision.
+
+### New feature placement
+
+- Planning backtest remains a full-width dashboard panel after the ordered home panels.
+- Team News and chip opportunities appear before scenario selection because they can change the manager's interpretation of the recommendation.
+- My Plan and Review on FPL remain after scenario details and preserve the decision sequence from recommendation to manual application and verification.
+
 ---
 
 ## 5. Error Handling & Edge Cases
@@ -239,7 +276,8 @@ Accommodate `GwModeIndicator` pill at 393px:
 |---|---|
 | GW kicks off while user is browsing | Auto-flip Planning → Live, clear override, show notification |
 | User overrides to Live during planning hours | Amber border indicator + warning text in pill |
-| Page reload with override active | Override clears (sessionStorage) — intentional |
+| Page reload with override active | Override remains for the current tab session. |
+| Tab or browser session closes | Override clears with `sessionStorage`. |
 
 ### Panel order edge cases
 
@@ -257,3 +295,25 @@ Accommodate `GwModeIndicator` pill at 393px:
 - Tablet breakpoints
 - Touch gesture swipe between panels
 - Push notifications for GW start
+
+---
+
+## November 2026 verification matrix
+
+| Surface | Mobile behavior | Automated evidence |
+|---|---|---|
+| Dashboard stats and header | 2×2 stats, compact branding, wrapping action row | `tests/e2e/responsive/mobile-dashboard.spec.ts` |
+| Fixture ticker | Contained horizontal scroll | `tests/e2e/responsive/mobile-dashboard.spec.ts` |
+| Live squad pitch | Compact player cards | `tests/e2e/responsive/mobile-dashboard.spec.ts` |
+| Planning constraints and scenarios | Single-column constraints, swipeable scenarios | `tests/e2e/responsive/mobile-planning.spec.ts` |
+| Team News and chip opportunities | Full-width readable cards and source actions | `tests/e2e/responsive/mobile-planning.spec.ts` |
+| Selected plan and comparison | Single-column metrics, contained table scroll | `tests/e2e/responsive/mobile-planning.spec.ts` |
+| My Plan verification | Single-column checklist and full-width sync actions | `tests/e2e/responsive/mobile-planning.spec.ts` |
+| Squad import | One-column review and narrow player rows | Component tests plus responsive CSS |
+| Settings | Mobile action layout and 44px reorder controls | Unit/component coverage plus responsive CSS |
+
+Run the mobile acceptance checks with:
+
+```bash
+npx playwright test tests/e2e/responsive --project=mobile-chromium
+```

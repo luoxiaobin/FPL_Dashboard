@@ -35,10 +35,11 @@
 .metrics strong { font-size: 1.25rem; }
 .playerList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; padding: 0; list-style: none; background: #1c3529; }
 .playerList li { display: flex; justify-content: space-between; padding: 11px 13px; background: #07110d; }
-.bench { display: flex; gap: 24px; padding-left: 22px; color: #b8c9be; }
+.bench { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 24px; padding-left: 22px; color: #b8c9be; }
+.bench li { overflow-wrap: anywhere; }
 .freshness { margin: 24px 0 0; font-size: .75rem; }
 @media (max-width: 900px) { .constraints { grid-template-columns: 1fr 1fr; } .scenarioGrid { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .page { padding: 18px; } .header { display: grid; } .deadline { text-align: left; } .importCard { align-items: stretch; flex-direction: column; } .importActions { align-items: stretch; flex-direction: column; } .importCard a, .importCard button { text-align: center; } .constraints { grid-template-columns: 1fr; } .scenarioGrid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .scenario { min-width: 84vw; scroll-snap-align: start; } .metrics, .playerList { grid-template-columns: 1fr; } .detailHeader { align-items: flex-start; flex-direction: column; } .planButton { position: sticky; bottom: 12px; width: 100%; } }
+@media (max-width: 560px) { .page { padding: 18px 14px; } .header { display: grid; } .deadline { text-align: left; } .importCard { align-items: stretch; flex-direction: column; } .importActions { align-items: stretch; flex-direction: column; } .importCard a, .importCard button { display: grid; place-items: center; text-align: center; } .constraints { grid-template-columns: 1fr; } .constraints button { width: 100%; } .scenarioGrid { display: flex; overflow-x: auto; scroll-padding-inline: 1px; scroll-snap-type: x mandatory; scrollbar-width: none; } .scenarioGrid::-webkit-scrollbar { display: none; } .scenario { min-width: min(84vw, 360px); scroll-snap-align: start; } .metrics, .playerList { grid-template-columns: 1fr; } .detail { padding: 18px; } .detailHeader { align-items: stretch; flex-direction: column; } .planButton { width: 100%; } .bench { grid-template-columns: 1fr 1fr; gap: 10px 24px; } }
 
 .savedPlan { max-width: 1200px; margin: 18px auto 0; }
 .review { border: 1px solid #315340; border-radius: 14px; background: #0b1912; }
@@ -54,7 +55,7 @@
 .reviewSteps a, .reviewCopy { display: inline-flex; min-height: 44px; align-items: center; padding: 8px 12px; border: 1px solid #315340; border-radius: 8px; color: #62d98b; background: #10251a; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
 .reviewContent [role='status']:not(:empty) { margin-top: 8px; }
 .reviewContent textarea { display: block; width: 100%; min-height: 150px; margin-top: 8px; padding: 8px; color: inherit; background: #07110d; }
-@media (max-width: 560px) { .reviewSteps { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .reviewContent { padding-inline: 12px; } .reviewSteps { grid-template-columns: 1fr; } .reviewLineup { columns: 1; } .verificationActions { display: grid; grid-template-columns: 1fr; } .verificationActions > * { justify-content: center; width: 100%; } }
 .verification { padding: 16px; border: 1px solid #315340; border-radius: 10px; background: #10251a; }
 .verificationResults { margin: 0 0 14px; padding-left: 20px; }
 .verificationActions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -68,4 +69,4 @@
 .teamNews p { color: #b8c9be; }
 .newsItems { display: grid; gap: 12px; padding: 0; list-style: none; }
 .newsItems li { padding: 14px; border: 1px solid #315340; border-radius: 10px; }
-.newsItems a { color: #86e6a6; }
+.newsItems a { display: inline-flex; min-height: 44px; align-items: center; color: #86e6a6; font-weight: 700; }

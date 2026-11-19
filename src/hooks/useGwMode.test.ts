@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { statusToMode, getStoredModeOverride, setStoredModeOverride } from './useGwMode';
+import { statusToMode, getStoredModeOverride, setStoredModeOverride, isAutoModeTransition } from './useGwMode';
 
 describe('statusToMode', () => {
   it('maps "live" to "live"', () => {
@@ -17,6 +17,18 @@ describe('statusToMode', () => {
   it('maps any other string to "planning"', () => {
     expect(statusToMode('upcoming')).toBe('planning');
     expect(statusToMode('between-gws')).toBe('planning');
+  });
+});
+
+describe('automatic mode transitions', () => {
+  it('does not treat the first observed mode as a transition', () => {
+    expect(isAutoModeTransition(null, 'live')).toBe(false);
+  });
+
+  it('detects a later Gameweek mode change', () => {
+    expect(isAutoModeTransition('planning', 'live')).toBe(true);
+    expect(isAutoModeTransition('live', 'planning')).toBe(true);
+    expect(isAutoModeTransition('live', 'live')).toBe(false);
   });
 });
 

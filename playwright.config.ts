@@ -41,7 +41,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-chromium',
-      use: { ...devices['iPhone 13'] },
+      use: { ...devices['iPhone 13'], viewport: { width: 393, height: 852 } },
       grepInvert: /@live|@fpl-auth-setup|@fpl-bookmarklet/,
     },
     ...(runLiveFplE2e ? [{

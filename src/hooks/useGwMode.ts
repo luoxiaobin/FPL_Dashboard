@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export type GwMode = 'live' | 'planning';
 
@@ -30,8 +30,13 @@ export function statusToMode(status: string | undefined): GwMode {
   return status === 'live' ? 'live' : 'planning';
 }
 
-export function useGwMode(enabled = true): GwMode {
+export function isAutoModeTransition(previous: GwMode | null, next: GwMode): boolean {
+  return previous !== null && previous !== next;
+}
+
+export function useGwMode(enabled = true, onAutoTransition?: (next: GwMode) => void): GwMode {
   const [mode, setMode] = useState<GwMode>('planning');
+  const observedMode = useRef<GwMode | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -43,7 +48,12 @@ export function useGwMode(enabled = true): GwMode {
         const res = await fetch('/api/v1/user/summary');
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setMode(statusToMode(data?.current_event_status));
+        if (!cancelled) {
+          const next = statusToMode(data?.current_event_status);
+          if (isAutoModeTransition(observedMode.current, next)) onAutoTransition?.(next);
+          observedMode.current = next;
+          setMode(next);
+        }
       } catch {
         // stay on last known mode
       }
@@ -55,7 +65,7 @@ export function useGwMode(enabled = true): GwMode {
       cancelled = true;
       clearInterval(id);
     };
-  }, [enabled]);
+  }, [enabled, onAutoTransition]);
 
   return mode;
 }

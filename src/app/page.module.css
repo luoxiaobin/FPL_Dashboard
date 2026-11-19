@@ -17,6 +17,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .logoFull {
@@ -36,6 +37,9 @@
   font-weight: 700;
   color: #93c5fd;
   letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .headerActions {
@@ -156,6 +160,8 @@
 
   .headerActions {
     align-self: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .logoFull {
@@ -169,6 +175,42 @@
   .teamName {
     font-size: 0.9rem;
   }
+}
+
+@media (max-width: 420px) {
+  .container {
+    padding: 24px 14px;
+  }
+
+  .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 24px;
+  }
+
+  .headerActions {
+    width: 100%;
+    align-self: auto;
+  }
+
+  .signOutBtn {
+    min-height: 44px;
+    padding-inline: 13px;
+  }
+
+  .statCard {
+    padding: 16px 10px;
+  }
+}
+
+.modeNotice {
+  margin: -24px 0 24px;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  color: #fde68a;
+  background: rgba(120, 53, 15, 0.25);
+  font-size: 0.85rem;
 }
 
 .panel {
